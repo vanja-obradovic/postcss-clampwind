@@ -2,12 +2,12 @@
   "name": "plugin-demo",
   "private": true,
   "scripts": {
-    "build": "npx tailwindcss -i styles.css -o output.css",
-    "watch": "npx tailwindcss -i styles.css -o output.css --watch"
+    "build": "npx postcss styles.css -o output.css",
+    "watch": "npx postcss styles.css -o output.css --watch"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.7",
-    "postcss": "^8.4.39",
+    "postcss": "^8.5.3",
     "tailwindcss": "^4.1.7"
   }
 }
