@@ -173,9 +173,6 @@
   .text-\[11px\] {
     font-size: 11px;
   }
-  .text-\[11px\] {
-    font-size: 11px;
-  }
   .md\:flex {
     @media (width >= 48rem) {
       display: flex;
@@ -191,9 +188,18 @@
       font-size: 20px;
     }
   }
-  .md\:text-\[20px\] {
+  .md\:max-lg\:pt-\[clamp\(20\,20\)\] {
     @media (width >= 48rem) {
-      font-size: 20px;
+      @media (width < 64rem) {
+        padding-top: clamp(20, 20);
+      }
+    }
+  }
+  .md\:max-lg\:text-\[clamp\(40\,40\)\] {
+    @media (width >= 48rem) {
+      @media (width < 64rem) {
+        font-size: clamp(40, 40);
+      }
     }
   }
 }
