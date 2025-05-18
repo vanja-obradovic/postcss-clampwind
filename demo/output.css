@@ -188,10 +188,10 @@
       font-size: 20px;
     }
   }
-  .md\:max-lg\:pt-\[clamp\(20\,20\)\] {
+  .md\:max-lg\:pt-\[clamp\(20\,20\,20\)\] {
     @media (width >= 48rem) {
       @media (width < 64rem) {
-        padding-top: clamp(20, 20);
+        padding-top: clamp(20, 20, 20);
       }
     }
   }
