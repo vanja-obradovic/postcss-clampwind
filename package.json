@@ -1,0 +1,28 @@
+{
+  "name": "tailwindcss-fluid-variants",
+  "version": "0.0.1",
+  "description": "A plugin for Tailwind CSS to create fluid variants",
+  "main": "src/index.js",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+  },
+  "license": "MIT",
+  "repository": "https://github.com/danieledep/tailwindcss-fluid-variants",
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.6"
+  },
+  "peerDependencies": {
+    "tailwindcss": ">=3.4.6"
+  },
+  "keywords": [
+    "tailwindcss",
+    "fluid",
+    "variants"
+  ]
+}
