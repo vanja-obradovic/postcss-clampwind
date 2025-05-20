@@ -4,7 +4,6 @@ const clampwind = (opts = {}) => {
   // Helper function to check if a value contains a clamp function with exactly two arguments
   const hasClampWithTwoArgs = (value) => {
     const clampMatch = value.match(/clamp\s*\(\s*([^,]*)\s*,\s*([^,]*)\s*\)/);
-    // Return true if we find a match with exactly two arguments
     return clampMatch !== null;
   };
 
@@ -26,6 +25,7 @@ const clampwind = (opts = {}) => {
           '*': (rule) => {
             if (rule.selector === ':root') {
               rule.walkDecls(decl => {
+                // Get custom breakpoints from :root
                 if (decl.prop.startsWith('--breakpoint')) {
                   const prop = decl.prop.replace('--breakpoint-', '');
                   rootElementBreakpoints[prop] = decl.value;
@@ -41,6 +41,7 @@ const clampwind = (opts = {}) => {
         
         AtRule: {
           layer: (atRule) => {
+            // Get default breakpoints from default tailwind layer
             if (!defaultLayerBreakpoints.length && atRule.source && atRule.source.input && atRule.source.input.css) {
               const css = atRule.source.input.css;
               const breakpointMatches = css.match(/--breakpoint-[^:]+:\s*[^;]+/g);
@@ -49,6 +50,7 @@ const clampwind = (opts = {}) => {
               }
             }
 
+            // Get user-defined breakpoints from static theme layer
             atRule.walkDecls(decl => {
               if (atRule.params == 'theme') {
                 if (decl.prop.startsWith('--breakpoint')) {
@@ -99,7 +101,7 @@ const clampwind = (opts = {}) => {
           if (screens) {
             screens = Object.assign({}, screens, defaultLayerBreakpoints, rootElementBreakpoints, themeLayerBreakpoints);
             screens = convertSortScreens(screens, rootFontSize);
-            console.log('screens', screens);
+            // console.log('screens', screens);
           }
           
           if (nestedMediaPairs.length > 0) {
