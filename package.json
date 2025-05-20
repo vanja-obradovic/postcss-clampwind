@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "A plugin for Tailwind CSS to create fluid variants",
   "main": "src/index.js",
+  "type": "module",
   "files": [
     "src"
   ],

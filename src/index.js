@@ -1,3 +1,5 @@
+import { defaultScreens, formatBreakpointsMatches, convertSortScreens } from './screens.js';
+
 const clampwind = (opts = {}) => {
   // Helper function to check if a value contains a clamp function with exactly two arguments
   const hasClampWithTwoArgs = (value) => {
@@ -6,14 +8,11 @@ const clampwind = (opts = {}) => {
     return clampMatch !== null;
   };
 
-  // TODO: Use from tailwind input css and merge + order with custom-defined ones
-  let screens = {
-    sm: '40rem',
-    md: '48rem',
-    lg: '64rem',
-    xl: '80rem',
-    '2xl': '96rem'
-  };
+  let rootFontSize = 16;
+  let screens = defaultScreens || {};
+  let defaultLayerBreakpoints = {};
+  let themeLayerBreakpoints = {};
+  let rootElementBreakpoints = {};
 
   return {
     postcssPlugin: 'clampwind',
@@ -21,22 +20,19 @@ const clampwind = (opts = {}) => {
       // Store references to parent media queries and their nested children with valid clamp functions
       const nestedMediaPairs = [];
       const mediaProperties = new Map();
-      let breakpointVariables = null;
       
       return {
-        // Add handlers for :root and other rules
         Rule: {
           '*': (rule) => {
             if (rule.selector === ':root') {
               rule.walkDecls(decl => {
-                console.log('Found declaration:', decl.prop, decl.value);
                 if (decl.prop.startsWith('--breakpoint')) {
-                  const name = decl.prop.replace('--breakpoint-', '');
-                  screens[name] = decl.value;
-                  console.log('Found custom breakpoint in :root:', {
-                    name,
-                    value: decl.value
-                  });
+                  const prop = decl.prop.replace('--breakpoint-', '');
+                  rootElementBreakpoints[prop] = decl.value;
+                }
+                // Set font-size
+                if (decl.prop === 'font-size' && decl.value.includes('px')) {
+                  rootFontSize = parseFloat(decl.value);
                 }
               });
             }
@@ -45,21 +41,20 @@ const clampwind = (opts = {}) => {
         
         AtRule: {
           layer: (atRule) => {
-            if (!breakpointVariables && atRule.source && atRule.source.input && atRule.source.input.css) {
+            if (!defaultLayerBreakpoints.length && atRule.source && atRule.source.input && atRule.source.input.css) {
               const css = atRule.source.input.css;
               const breakpointMatches = css.match(/--breakpoint-[^:]+:\s*[^;]+/g);
               if (breakpointMatches) {
-                breakpointVariables = breakpointMatches;
-                console.log('Found breakpoint variables in layer:', breakpointMatches);
+                defaultLayerBreakpoints = formatBreakpointsMatches(breakpointMatches);
               }
             }
 
             atRule.walkDecls(decl => {
-              if (decl.prop.startsWith('--breakpoint')) {
-                console.log('Found breakpoint variable in theme:', {
-                  name: decl.prop,
-                  value: decl.value
-                });
+              if (atRule.params == 'theme') {
+                if (decl.prop.startsWith('--breakpoint')) {
+                  const prop = decl.prop.replace('--breakpoint-', '');
+                  themeLayerBreakpoints[prop] = decl.value;
+                }
               }
             });
           },
@@ -100,6 +95,13 @@ const clampwind = (opts = {}) => {
         
         // Log filtered nested media queries after processing
         OnceExit() {
+
+          if (screens) {
+            screens = Object.assign({}, screens, defaultLayerBreakpoints, rootElementBreakpoints, themeLayerBreakpoints);
+            screens = convertSortScreens(screens, rootFontSize);
+            console.log('screens', screens);
+          }
+          
           if (nestedMediaPairs.length > 0) {
             console.log(`Found ${nestedMediaPairs.length} nested media queries with two-argument clamp() functions:`);
             
@@ -125,6 +127,6 @@ const clampwind = (opts = {}) => {
   };
 };
 
-clampwind.postcss = true
+clampwind.postcss = true;
  
-module.exports = clampwind
+export default clampwind;
