@@ -1,4 +1,4 @@
-import { defaultScreens, formatBreakpointsMatches, convertSortScreens } from './screens.js';
+import { defaultScreens, formatRegexMatches, convertSortScreens } from './screens.js';
 
 const clampwind = (opts = {}) => {
   // Helper function to check if a value contains a clamp function with exactly two arguments
@@ -53,7 +53,7 @@ const clampwind = (opts = {}) => {
               const css = atRule.source.input.css;
               const breakpointMatches = css.match(/--breakpoint-[^:]+:\s*[^;]+/g);
               if (breakpointMatches) {
-                defaultLayerBreakpoints = formatBreakpointsMatches(breakpointMatches);
+                defaultLayerBreakpoints = formatRegexMatches(breakpointMatches);
               }
             }
 

@@ -173,9 +173,6 @@
   .bg-gray-100 {
     background-color: var(--color-gray-100);
   }
-  .p-\[clamp\(10px\,30px\)\] {
-    padding: clamp(10px, 30px);
-  }
   .p-\[clamp\(xl\,30px\)\] {
     padding: clamp(xl, 30px);
   }

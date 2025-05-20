@@ -15,8 +15,8 @@ const defaultScreens = {
  * @param {Array<string>} breakpointsMatches - Array of strings in format '--breakpoint-{name}: {value}'
  * @returns {Object} Object with breakpoint names as keys and values as values
  */
-const formatBreakpointsMatches = (breakpointsMatches) => {
-  return breakpointsMatches.reduce((acc, match) => {
+const formatRegexMatches = (matches) => {
+  return matches.reduce((acc, match) => {
     const [, name, value] = match.match(/--breakpoint-([^:]+):\s*([^;]+)/);
     acc[name.trim()] = value.trim();
     return acc;
@@ -58,6 +58,6 @@ const convertSortScreens = (screens, rootFontSize = 16) => {
 
 export {
   defaultScreens,
-  formatBreakpointsMatches,
+  formatRegexMatches,
   convertSortScreens
 };
