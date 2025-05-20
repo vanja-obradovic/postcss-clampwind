@@ -107,6 +107,7 @@ This will generate the following css:
 - ~~Ability to convert px to rem in custom breakpoints~~
 - Check for atRules where there is only one media query
 - Check for atRules where there are no media queries
+- Create media queries ranges from the smallest to the largest breakpoint for clamp rules with one or zero media queries ranges
 - Convert clamped values to rem
 - Check if the pxToRem plugin does conversions before the plugin runs
 - support decreasing values for breakpoints where minValue is greater than maxValue
