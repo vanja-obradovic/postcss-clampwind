@@ -101,6 +101,19 @@ This will generate the following css:
 }
 ```
 
+## TODO
+
+- Merge and order custom breakpoints with Tailwind default ones
+- Ability to convert px to rem in custom breakpoints
+- Check for atRules where there is only one media query
+- Check for atRules where there are no media queries
+- Convert clamped values to rem
+- support decreasing values for breakpoints where minValue is greater than maxValue
+- support negative values
+- Check how it works with mixing breakpoints, eg. `md:max-lg:` and `max-lg:md:` are both valid
+- check if it's possible to import utopia-core as a dependency
+- support container queries
+
 
 ## License and Credits
 
