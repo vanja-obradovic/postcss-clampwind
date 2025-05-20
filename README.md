@@ -109,6 +109,9 @@ This will generate the following css:
 - Check for atRules where there are no media queries
 - Create media queries ranges from the smallest to the largest breakpoint for clamp rules with one or zero media queries ranges
 - Convert clamped values to rem
+- if clamped value has a unit different than px? No conversion? 
+- if clamped values has no unit/only numbers transform to `calc(var(--spacing) * value)`
+- if clamped value has a token (eg. `xl`), do nothing, not supported yet
 - Check if the pxToRem plugin does conversions before the plugin runs
 - support decreasing values for breakpoints where minValue is greater than maxValue
 - support negative values

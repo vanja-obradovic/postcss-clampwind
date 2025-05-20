@@ -176,6 +176,9 @@
   .p-\[clamp\(10px\,30px\)\] {
     padding: clamp(10px, 30px);
   }
+  .p-\[clamp\(xl\,30px\)\] {
+    padding: clamp(xl, 30px);
+  }
   .text-\[11px\] {
     font-size: 11px;
   }
