@@ -6,17 +6,66 @@ const clampwind = (opts = {}) => {
     return clampMatch !== null;
   };
 
+  // TODO: Use from tailwind input css and merge + order with custom-defined ones
+  let screens = {
+    sm: '40rem',
+    md: '48rem',
+    lg: '64rem',
+    xl: '80rem',
+    '2xl': '96rem'
+  };
+
   return {
     postcssPlugin: 'clampwind',
     prepare() {
       // Store references to parent media queries and their nested children with valid clamp functions
       const nestedMediaPairs = [];
       const mediaProperties = new Map();
+      let breakpointVariables = null;
       
       return {
-        // Faster specific AtRule listener for media
+        // Add handlers for :root and other rules
+        Rule: {
+          '*': (rule) => {
+            if (rule.selector === ':root') {
+              rule.walkDecls(decl => {
+                console.log('Found declaration:', decl.prop, decl.value);
+                if (decl.prop.startsWith('--breakpoint')) {
+                  const name = decl.prop.replace('--breakpoint-', '');
+                  screens[name] = decl.value;
+                  console.log('Found custom breakpoint in :root:', {
+                    name,
+                    value: decl.value
+                  });
+                }
+              });
+            }
+          }
+        },
+        
         AtRule: {
+          layer: (atRule) => {
+            if (!breakpointVariables && atRule.source && atRule.source.input && atRule.source.input.css) {
+              const css = atRule.source.input.css;
+              const breakpointMatches = css.match(/--breakpoint-[^:]+:\s*[^;]+/g);
+              if (breakpointMatches) {
+                breakpointVariables = breakpointMatches;
+                console.log('Found breakpoint variables in layer:', breakpointMatches);
+              }
+            }
+
+            atRule.walkDecls(decl => {
+              if (decl.prop.startsWith('--breakpoint')) {
+                console.log('Found breakpoint variable in theme:', {
+                  name: decl.prop,
+                  value: decl.value
+                });
+              }
+            });
+          },
+
           media: (atRule, { result }) => {
+     
             if (atRule.parent && atRule.parent.type === 'atrule' && atRule.parent.name === 'media') {
               // This is a nested media query
               const parentMedia = atRule.parent;

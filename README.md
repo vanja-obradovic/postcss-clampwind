@@ -1,4 +1,4 @@
-# tailwindcss-fluid-variants
+# clampwind
 
 A plugin for Tailwind CSS to create fluid variants of any Tailwind CSS utility.
 
@@ -8,7 +8,7 @@ A plugin for Tailwind CSS to create fluid variants of any Tailwind CSS utility.
 Install the plugin from npm:
 
 ```sh
-npm install -D tailwindcss-fluid-variants
+npm install -D clampwind
 ```
 
 Then add the plugin to your `tailwind.config.js` file:
@@ -20,7 +20,7 @@ module.exports = {
     // ...
   },
   plugins: [
-    require('tailwindcss-fluid-variants'),
+    require('clampwind'),
     // ...
   ],
 }
@@ -28,29 +28,79 @@ module.exports = {
 
 ## Usage
 
-To start using the plugin, you simply need to prefix with a tilde `~` any screen variant you want to make fluid.
+To use this plugin you need to use the `clamp()` function but only with two arguments, the first one is the minimum value and the second one is the maximum value.
+
+### Clamp between smallest and largest breakpoint
+
+Write the tailwind utility you want to make fluid without any breakpoint modifier, for example:
 
 ```html
-<div class="~sm:text-2xl ~md:text-3xl"></div>
+<div class="text-[clamp(16px,50px)]"></div>
 ```
 
-### To-do/Limitations
+This will use Tailwind default largest and smallest breakpoint, or any other breakpoint you have defined, and generate the following css:
 
-- Check `rem` values compatibility for size utilities, numeric values as line-height, border-radius, I think right now it works only if the value is the same unit as the viewport unit
+```css
+.text-\[clamp\(16px\,50px\)\] {
+  @media (width >= 40rem) {
+    @media (width < 96rem) {
+      font-size: clamp(16px, ... , 50px);
+    }
+  }
+}
+```
+### Clamp between two breakpoints
 
-- Does not work with `@apply`
-- Add container queries support, use `~@md:text-[24px]` to target the `@md` container query
-- Make it Tailwind v4 compatible, especially when setting `	--spacing: 1px;` in the config
-- TODO: Generator function that checks if the one-letter variable is already used, eg min-height and max-height would both be m-h
-- Make the slope function work with descending values, eg `~md:text-[24px] ~lg:text-[20px]`
-- Make it possible to configure the amount of screens, now it uses default 5 (sm, md, lg, xl, 2xl) but if they were three (sm, md, lg) it outputs way less css
-- It generates around 4kb of css for each fluid utility and you usually need at least 2 to interpolate between, so it can become a lot of css
-- Using future css `if()` function would remove the need for class selectors, and make it more resilient, would make it work with `@apply` too
+Simply add regular Tailwind breakpoint modifiers to the utility, for example:
 
-### Features/Done
+```html
+<div class="md:max-lg:text-[clamp(16px,50px)]"></div>
+```
 
-- works with custom utilities but they need to have a `-` in the name, eg `~md:heading-2 ~lg:heading-3`
-- Prevent generating fluid variants for non-size utilities, like `flex`, colors etc if mistakenly prefixed with `~`
+To clamp the CSS property between the two breakpoints you need to use the `max-` modifier, in this case the CSS property will be clamped between the `md` and `lg` breakpoints.
+
+This will generate the following css:
+
+```css
+.md\:max-lg\:text-\[clamp\(16px\,50px\)\] {
+  @media (width >= 48rem) {
+    @media (width < 64rem) {
+      font-size: clamp(16px, ... , 50px);
+    }
+  }
+}
+```
+
+### Add custom breakpoints
+
+Tailwind v4 introduced the new configuration via CSS custom properties, but Tailwind will not output in your CSS any custom properties that's not referenced in your CSS, to solve this issue you should use the `@theme static` directive to create custom breakpoints.
+
+```css
+@theme static {
+  --breakpoint-4xl: 1600px;
+}
+```
+
+### Clamp between custom values
+
+With Tailwind v4 it's really easy to use one-time custom breakpoints, and this plugin will automatically detect them and use them to clamp the CSS property.
+
+```html
+<div class="min-[1000px]:max-xl:text-[clamp(16px,50px,100px)]"></div>
+```
+
+This will generate the following css:
+
+```css
+.min-\[1000px\]\:max-xl\:text-\[clamp\(16px\,50px\,100px\)\] {
+  @media (width >= 1000px) {
+    @media (width < 64rem) {
+      font-size: clamp(16px, ... , 50px);
+    }
+  }
+}
+```
+
 
 ## License and Credits
 
