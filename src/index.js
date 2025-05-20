@@ -13,12 +13,15 @@ const clampwind = (opts = {}) => {
   let themeLayerBreakpoints = {};
   let rootElementBreakpoints = {};
 
+  // Store references to parent media queries and their nested children with valid clamp functions
+  const noMediaQueries = [];
+  const nestedMediaQueries = [];
+  const doubleNestedMediaQueries = [];
+  const mediaProperties = new Map();
+
   return {
     postcssPlugin: 'clampwind',
     prepare() {
-      // Store references to parent media queries and their nested children with valid clamp functions
-      const nestedMediaPairs = [];
-      const mediaProperties = new Map();
       
       return {
         Rule: {
@@ -30,7 +33,11 @@ const clampwind = (opts = {}) => {
                   const prop = decl.prop.replace('--breakpoint-', '');
                   rootElementBreakpoints[prop] = decl.value;
                 }
-                // Set font-size
+                // Get font-size from --text-base declaration
+                if (decl.prop === '--text-base' && decl.value.includes('px')) {
+                  rootFontSize = parseFloat(decl.value);
+                }
+                // Set font-size from font-size declaration
                 if (decl.prop === 'font-size' && decl.value.includes('px')) {
                   rootFontSize = parseFloat(decl.value);
                 }
@@ -50,12 +57,16 @@ const clampwind = (opts = {}) => {
               }
             }
 
-            // Get user-defined breakpoints from static theme layer
             atRule.walkDecls(decl => {
               if (atRule.params == 'theme') {
+                // Get user-defined breakpoints from static theme layer
                 if (decl.prop.startsWith('--breakpoint')) {
                   const prop = decl.prop.replace('--breakpoint-', '');
                   themeLayerBreakpoints[prop] = decl.value;
+                }
+                // Get font-size from static theme layer
+                if (decl.prop === '--text-base' && decl.value.includes('px')) {
+                  rootFontSize = parseFloat(decl.value);
                 }
               }
             });
@@ -83,7 +94,7 @@ const clampwind = (opts = {}) => {
               
               // Only store if we found valid clamp functions
               if (hasValidClamp) {
-                nestedMediaPairs.push({
+                doubleNestedMediaQueries.push({
                   parent: parentMedia,
                   child: atRule
                 });
@@ -104,10 +115,10 @@ const clampwind = (opts = {}) => {
             // console.log('screens', screens);
           }
           
-          if (nestedMediaPairs.length > 0) {
-            console.log(`Found ${nestedMediaPairs.length} nested media queries with two-argument clamp() functions:`);
+          if (doubleNestedMediaQueries.length > 0) {
+            console.log(`Found ${doubleNestedMediaQueries.length} nested media queries with two-argument clamp() functions:`);
             
-            nestedMediaPairs.forEach(pair => {
+            doubleNestedMediaQueries.forEach(pair => {
               console.log('\nNested Media Query:');
               console.log('Parent media query:', pair.parent.params);
               console.log('Child media query:', pair.child.params);

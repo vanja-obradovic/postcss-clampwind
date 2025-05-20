@@ -12,6 +12,8 @@
     --spacing: 0.25rem;
     --breakpoint-sm: 130px;
     --breakpoint-2xl: 100rem;
+    --text-base: 1rem;
+    --text-base--line-height: calc(1.5 / 1);
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
     --breakpoint-xs: 11rem;
@@ -171,16 +173,11 @@
   .bg-gray-100 {
     background-color: var(--color-gray-100);
   }
-  .p-4 {
-    padding: calc(var(--spacing) * 4);
+  .p-\[clamp\(10px\,30px\)\] {
+    padding: clamp(10px, 30px);
   }
   .text-\[11px\] {
     font-size: 11px;
-  }
-  .xs\:p-2 {
-    @media (width >= 11rem) {
-      padding: calc(var(--spacing) * 2);
-    }
   }
   .md\:flex {
     @media (width >= 48rem) {
@@ -192,9 +189,15 @@
       padding: calc(var(--spacing) * 3);
     }
   }
-  .md\:text-\[20px\] {
+  .md\:text-base {
     @media (width >= 48rem) {
-      font-size: 20px;
+      font-size: var(--text-base);
+      line-height: var(--tw-leading, var(--text-base--line-height));
+    }
+  }
+  .md\:text-\[clamp\(20px\,50px\)\] {
+    @media (width >= 48rem) {
+      font-size: clamp(20px, 50px);
     }
   }
   .md\:max-\[800px\]\:text-\[clamp\(40px\,40px\)\] {
