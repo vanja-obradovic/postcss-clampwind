@@ -108,11 +108,13 @@ This will generate the following css:
 - Check for atRules where there is only one media query
 - Check for atRules where there are no media queries
 - Create media queries ranges from the smallest to the largest breakpoint for clamp rules with one or zero media queries ranges
+- Maybe I should use a similar approach to my fluid variant plugin and make the clamp values with `calc()` and custom properties, it would allow to use calc() and standard CSS for the clamp values. eg. `md:max-lg:text-[clamp(16px, calc(50px *3))]`
 - Convert clamped values to rem
 - if clamped value has a unit different than px? No conversion? 
 - if clamped values has no unit/only numbers transform to `calc(var(--spacing) * value)`
 - if clamped value has a token (eg. `xl`), do nothing, not supported yet
 - Check if the pxToRem plugin does conversions before the plugin runs
+- Check if it works well with vite
 - support decreasing values for breakpoints where minValue is greater than maxValue
 - support negative values
 - Check how it works with mixing breakpoints, eg. `md:max-lg:` and `max-lg:md:` are both valid
