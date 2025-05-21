@@ -32,7 +32,7 @@ To use this plugin you need to use the `clamp()` function but only with two argu
 
 ### Clamp between smallest and largest breakpoint
 
-Write the tailwind utility you want to make fluid without any breakpoint modifier, for example:
+Write the tailwind utility you want to make fluid, without any breakpoint modifier, for example:
 
 ```html
 <div class="text-[clamp(16px,50px)]"></div>
@@ -42,8 +42,8 @@ This will use Tailwind default largest and smallest breakpoint, or any other bre
 
 ```css
 .text-\[clamp\(16px\,50px\)\] {
-  @media (width >= 40rem) {
-    @media (width < 96rem) {
+  @media (width >= 40rem) { /* 640px */
+    @media (width < 96rem) { /* 1536px */
       font-size: clamp(16px, ... , 50px);
     }
   }
@@ -63,8 +63,8 @@ This will generate the following css:
 
 ```css
 .md\:max-lg\:text-\[clamp\(16px\,50px\)\] {
-  @media (width >= 48rem) {
-    @media (width < 64rem) {
+  @media (width >= 48rem) { /* 768px */
+    @media (width < 64rem) { /* 1024px */
       font-size: clamp(16px, ... , 50px);
     }
   }
@@ -86,15 +86,15 @@ Tailwind v4 introduced the new configuration via CSS custom properties, but Tail
 With Tailwind v4 it's really easy to use one-time custom breakpoints, and this plugin will automatically detect them and use them to clamp the CSS property.
 
 ```html
-<div class="min-[1000px]:max-xl:text-[clamp(16px,50px,100px)]"></div>
+<div class="min-[1000px]:max-xl:text-[clamp(16px,50px)]"></div>
 ```
 
 This will generate the following css:
 
 ```css
-.min-\[1000px\]\:max-xl\:text-\[clamp\(16px\,50px\,100px\)\] {
-  @media (width >= 1000px) {
-    @media (width < 64rem) {
+.min-\[1000px\]\:max-xl\:text-\[clamp\(16px\,50px\)\] {
+  @media (width >= 1000px) { /* 1000px */
+    @media (width < 64rem) { /* 1600px */
       font-size: clamp(16px, ... , 50px);
     }
   }
@@ -108,7 +108,7 @@ This will generate the following css:
 - Check for atRules where there is only one media query
 - Check for atRules where there are no media queries
 - Create media queries ranges from the smallest to the largest breakpoint for clamp rules with one or zero media queries ranges
-- Maybe I should use a similar approach to my fluid variant plugin and make the clamp values with `calc()` and custom properties, it would allow to use calc() and standard CSS for the clamp values. eg. `md:max-lg:text-[clamp(16px, calc(50px *3))]`
+- Maybe I should use a similar approach to my fluid variant plugin and make the clamp values with `calc()` and custom properties, it would allow to use calc() and standard CSS for the clamp values. eg. `md:max-lg:text-[clamp(16px, calc(50px *3))]` or `md:max-lg:text-[clamp(--text-sm, --text-lg)]`
 - Convert clamped values to rem
 - if clamped value has a unit different than px? No conversion? 
 - if clamped values has no unit/only numbers transform to `calc(var(--spacing) * value)`
