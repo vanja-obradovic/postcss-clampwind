@@ -112,7 +112,7 @@ This will generate the following css:
 - Convert clamped values to rem
 - if clamped value has a unit different than px? No conversion? 
 - if clamped values has no unit/only numbers transform to `calc(var(--spacing) * value)`
-- if clamped value has a token (eg. `xl`), do nothing, not supported yet
+- if clamped value has a token (eg. `xl`), do nothing, not supported yet, maybe in the future I could get the default value from the default theme
 - Check if the pxToRem plugin does conversions before the plugin runs
 - Check if it works well with vite
 - support decreasing values for breakpoints where minValue is greater than maxValue
