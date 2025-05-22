@@ -108,6 +108,8 @@ This will generate the following css:
 - Check for atRules where there is only one media query
 - Check for atRules where there are no media queries
 - Create media queries ranges from the smallest to the largest breakpoint for clamp rules with one or zero media queries ranges
+- I need to also add external ranges for these cases, if there are no breakpoints or only one breakpoint, the plugin should add the external range to the generated CSS. 
+Eg. `text-[clamp(16px,50px)]` should generate `@media (width < 40rem) { ... } @media (width >= 96rem) { ... }`
 - Maybe I should use a similar approach to my fluid variant plugin and make the clamp values with `calc()` and custom properties, it would allow to use calc() and standard CSS for the clamp values. eg. `md:max-lg:text-[clamp(16px, calc(50px *3))]` or `md:max-lg:text-[clamp(--text-sm, --text-lg)]`
 - Convert clamped values to rem
 - if clamped value has a unit different than px? No conversion? 
