@@ -23,9 +23,7 @@
 
 
 @theme static {
-  --breakpoint-xs: 11rem;
-  --breakpoint-sm: 130px;
-  --breakpoint-2xl: 100rem;
+
   --breakpoint-3xl: 120rem;
 }
 
