@@ -13,9 +13,8 @@ const clampwind = (opts = {}) => {
   let themeLayerBreakpoints = {};
   let rootElementBreakpoints = {};
 
-  // Store references to parent media queries and their nested children with valid clamp functions
   const noMediaQueries = [];
-  const nestedMediaQueries = [];
+  const singleMediaQueries = [];
   const doubleNestedMediaQueries = [];
   const mediaProperties = new Map();
 
@@ -27,9 +26,9 @@ const clampwind = (opts = {}) => {
         Rule: {
           '*': (rule) => {
             if (rule.selector === ':root') {
+              // Get custom breakpoints from :root
               rule.walkDecls(decl => {
-                // Get custom breakpoints from :root
-                if (decl.prop.startsWith('--breakpoint')) {
+                if (decl.prop.startsWith('--breakpoint-')) {
                   const prop = decl.prop.replace('--breakpoint-', '');
                   rootElementBreakpoints[prop] = decl.value;
                 }
@@ -42,6 +41,29 @@ const clampwind = (opts = {}) => {
                   rootFontSize = parseFloat(decl.value);
                 }
               });
+              return;
+            }
+
+            // collect direct clamp() decls
+            const directProps = [];
+            if (Array.isArray(rule.nodes)) {
+              rule.nodes.forEach(node => {
+                if (node.type === 'decl' && hasClampWithTwoArgs(node.value)) {
+                  directProps.push({ prop: node.prop, value: node.value });
+                }
+              });
+            }
+
+            // only if we found clamp() and there are NO @media children
+            const hasMediaChild = Array.isArray(rule.nodes) &&
+              rule.nodes.some(n => n.type === 'atrule' && n.name === 'media');
+
+            if (directProps.length && !hasMediaChild) {
+              noMediaQueries.push({
+                rule,
+                properties: directProps
+              });
+              mediaProperties.set(rule, directProps);
             }
           }
         },
@@ -72,41 +94,36 @@ const clampwind = (opts = {}) => {
             });
           },
 
-          media: (atRule, { result }) => {
-     
-            if (atRule.parent && atRule.parent.type === 'atrule' && atRule.parent.name === 'media') {
-              // This is a nested media query
-              const parentMedia = atRule.parent;
-              
-              // Collect properties with clamp() function having exactly two arguments
-              const validProperties = [];
-              let hasValidClamp = false;
-              
-              atRule.walkDecls(decl => {
-                if (hasClampWithTwoArgs(decl.value)) {
-                  hasValidClamp = true;
-                  validProperties.push({
-                    prop: decl.prop,
-                    value: decl.value
-                  });
+          media: (atRule) => {
+            // Find if this @media rule is nested
+            const isNested =
+              atRule.parent?.type === 'atrule' && atRule.parent.name === 'media';
+        
+            // Collect all properties with clamp() having two args
+            const validProperties = [];
+            if (Array.isArray(atRule.nodes)) {
+              atRule.nodes.forEach(node => {
+                if (node.type === 'decl' && hasClampWithTwoArgs(node.value)) {
+                  validProperties.push({ prop: node.prop, value: node.value });
                 }
               });
-              
-              // Only store if we found valid clamp functions
-              if (hasValidClamp) {
-                doubleNestedMediaQueries.push({
-                  parent: parentMedia,
-                  child: atRule
-                });
-                
-                // Associate valid properties with this media query
-                mediaProperties.set(atRule, validProperties);
-              }
             }
+        
+            if (!validProperties.length) return;
+        
+            if (isNested) {
+              doubleNestedMediaQueries.push({
+                parent: atRule.parent,
+                child: atRule
+              });
+            } else {
+              singleMediaQueries.push(atRule);
+            }
+        
+            mediaProperties.set(atRule, validProperties);
           }
         },
         
-        // Log filtered nested media queries after processing
         OnceExit() {
 
           if (screens) {
@@ -115,24 +132,44 @@ const clampwind = (opts = {}) => {
             // console.log('screens', screens);
           }
           
-          if (doubleNestedMediaQueries.length > 0) {
-            console.log(`Found ${doubleNestedMediaQueries.length} nested media queries with two-argument clamp() functions:`);
-            
-            doubleNestedMediaQueries.forEach(pair => {
-              console.log('\nNested Media Query:');
-              console.log('Parent media query:', pair.parent.params);
-              console.log('Child media query:', pair.child.params);
-              
-              // Log properties with valid clamp functions
-              const properties = mediaProperties.get(pair.child) || [];
-              properties.forEach(prop => {
-                console.log(`Property: ${prop.prop}, Value: ${prop.value}`);
+           // no‐media
+           if (noMediaQueries.length) {
+            console.log(`\nFound ${noMediaQueries.length} rules with clamp() and NO @media:`);
+            noMediaQueries.forEach(({ rule, properties }) => {
+              console.log(`  selector: ${rule.selector}`);
+              properties.forEach(d => {
+                console.log(`    ${d.prop}: ${d.value}`);
               });
-              
-              console.log('-------------------');
             });
           } else {
-            console.log('No nested media queries with two-argument clamp() functions found.');
+            console.log('No rules with clamp() outside of media queries found.');
+          }
+
+          // single‐media
+          if (singleMediaQueries.length) {
+            console.log(`\nFound ${singleMediaQueries.length} single-media rules:`);
+            singleMediaQueries.forEach(atRule => {
+              console.log(`  @media ${atRule.params}`);
+              mediaProperties.get(atRule).forEach(d => {
+                console.log(`    ${d.prop}: ${d.value}`);
+              });
+            });
+          } else {
+            console.log('No single-media rules found.');
+          }
+
+          // double nested media queries
+          if (doubleNestedMediaQueries.length) {
+            console.log(`\nFound ${doubleNestedMediaQueries.length} nested-media rules:`);
+            doubleNestedMediaQueries.forEach(({ parent, child }) => {
+              console.log(`  parent: @media ${parent.params}`);
+              console.log(`  child:  @media ${child.params}`);
+              mediaProperties.get(child).forEach(d => {
+                console.log(`    ${d.prop}: ${d.value}`);
+              });
+            });
+          } else {
+            console.log('No nested-media rules found.');
           }
         }
       };
