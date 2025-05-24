@@ -2,8 +2,11 @@ import postcss from 'postcss';
 import { defaultScreens, formatRegexMatches, convertSortScreens } from './screens.js';
 
 const clampwind = (opts = {}) => {
-  const hasClampWithTwoArgs = (value) =>
-    /\bclamp\s*\(\s*([^,]+)\s*,\s*([^,]+)\s*\)/.test(value);
+  // simple extractor: clamp(x,y) → [x,y]
+  const extractTwoClampArgs = (value) => {
+    const m = value.match(/\bclamp\s*\(\s*([^,()]+)\s*,\s*([^,()]+)\s*\)$/);
+    return m ? [m[1].trim(), m[2].trim()] : null;
+  };
 
   let rootFontSize = 16;
   let screens = defaultScreens || {};
@@ -41,7 +44,7 @@ const clampwind = (opts = {}) => {
           // collect direct clamp() decl nodes
           const declNodes = [];
           for (const node of rule.nodes || []) {
-            if (node.type === 'decl' && hasClampWithTwoArgs(node.value)) {
+            if (node.type === 'decl' && extractTwoClampArgs(node.value)) {
               declNodes.push(node);
             }
           }
@@ -83,7 +86,7 @@ const clampwind = (opts = {}) => {
 
             const declNodes = [];
             for (const node of atRule.nodes || []) {
-              if (node.type === 'decl' && hasClampWithTwoArgs(node.value)) {
+              if (node.type === 'decl' && extractTwoClampArgs(node.value)) {
                 declNodes.push(node);
               }
             }
@@ -103,7 +106,7 @@ const clampwind = (opts = {}) => {
         },
 
         OnceExit() {
-          // Build final screens map
+          // Join, convert and sort screens breakpoints
           screens = Object.assign(
             {},
             screens,
@@ -122,7 +125,6 @@ const clampwind = (opts = {}) => {
               const lower = lowerRaw.trim();
               const upper = upperRaw.trim();
 
-              // Get first and last breakpoints from sorted screens
               const screenValues = Object.values(screens);
               const lowerBP = screenValues[0];
               const upperBP = screenValues[screenValues.length - 1];
@@ -198,12 +200,28 @@ const clampwind = (opts = {}) => {
             });
           });
 
-          // REPORT nested-media
-          console.log(`\nNested-media (${doubleNestedMediaQueries.length}):`);
+          // Nested-media queries
           doubleNestedMediaQueries.forEach(({ parentNode, mediaNode, declNodes }) => {
-            console.log(`  parent: @media ${parentNode.params}`);
-            console.log(`  child:  @media ${mediaNode.params}`);
-            declNodes.forEach(d => console.log(`    ${d.prop}: ${d.value}`));
+            declNodes.forEach(decl => { 
+
+              const maxScreen = ([parentNode.params, mediaNode.params])
+                .filter(p => p.includes('<'))
+                .map(p => p.match(/<([^)]+)/)[1].trim())
+                .map(v => parseInt(v.includes('px') ? v.replace('px', '') / rootFontSize : v))[0]
+              
+              const minScreen = ([parentNode.params, mediaNode.params])
+                .filter(p => p.includes('>'))
+                .map(p => p.match(/>=?([^)]+)/)[1].trim())
+                .map(v => parseInt(v.includes('px') ? v.replace('px', '') / rootFontSize : v))[0]
+              
+              const [lower, upper] = extractTwoClampArgs(decl.value)
+              const slope = `(${upper} - ${lower}) / (${maxScreen} - ${minScreen})`
+              const intercept = `${lower} - ${slope} * ${minScreen}`
+              const clamp = `clamp(${lower}, calc(${intercept} + ${slope} * (100vw)), ${upper})`
+              console.log(clamp)
+
+              decl.value = clamp
+            });
           });
         }
       };
