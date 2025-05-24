@@ -113,6 +113,7 @@ Eg. `text-[clamp(16px,50px)]` should generate `@media (width < 40rem) { ... } @m
 - Maybe I should use a similar approach to my fluid variant plugin and make the clamp values with `calc()` and custom properties, it would allow to use calc() and standard CSS for the clamp values. eg. `md:max-lg:text-[clamp(16px, calc(50px *3))]` or `md:max-lg:text-[clamp(--text-sm, --text-lg)]`
 - Convert clamped values to rem
 - if clamped value has a unit different than px? No conversion? 
+- if clamped value is a css variable, wrap it in a `var()`
 - if clamped values has no unit/only numbers transform to `calc(var(--spacing) * value)`
 - if clamped value has a token (eg. `xl`), do nothing, not supported yet, maybe in the future I could get the default value from the default theme
 - Check if the pxToRem plugin does conversions before the plugin runs
