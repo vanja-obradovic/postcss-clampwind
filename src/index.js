@@ -8,7 +8,12 @@ const clampwind = (opts = {}) => {
     return m ? [m[1].trim(), m[2].trim()] : null;
   };
 
+  const hasUnit = (value) => {
+    return /[a-zA-Z%]+$/.test(value);
+  }
+
   let rootFontSize = 16;
+  let spacingSize = 0.25;
   let screens = defaultScreens || {};
   let defaultLayerBreakpoints = {};
   let themeLayerBreakpoints = {};
@@ -30,6 +35,9 @@ const clampwind = (opts = {}) => {
               if (decl.prop.startsWith('--breakpoint-')) {
                 const key = decl.prop.replace('--breakpoint-', '');
                 rootElementBreakpoints[key] = decl.value;
+              }
+              if (decl.prop === '--spacing' && decl.value.includes('px')) {
+                spacingSize = parseFloat(decl.value) / rootFontSize;
               }
               if (decl.prop === '--text-base' && decl.value.includes('px')) {
                 rootFontSize = parseFloat(decl.value);
@@ -72,6 +80,9 @@ const clampwind = (opts = {}) => {
                 if (decl.prop.startsWith('--breakpoint-')) {
                   const key = decl.prop.replace('--breakpoint-', '');
                   themeLayerBreakpoints[key] = decl.value;
+                }
+                if (decl.prop === '--spacing' && decl.value.includes('px')) {
+                  spacingSize = parseFloat(decl.value) / rootFontSize;
                 }
                 if (decl.prop === '--text-base' && decl.value.includes('px')) {
                   rootFontSize = parseFloat(decl.value);
@@ -206,19 +217,43 @@ const clampwind = (opts = {}) => {
 
               const maxScreen = ([parentNode.params, mediaNode.params])
                 .filter(p => p.includes('<'))
-                .map(p => p.match(/<([^)]+)/)[1].trim())
-                .map(v => parseInt(v.includes('px') ? v.replace('px', '') / rootFontSize : v))[0]
+                .map(p => p.match(/<([^)]+)/)[1].trim())[0]
               
               const minScreen = ([parentNode.params, mediaNode.params])
                 .filter(p => p.includes('>'))
-                .map(p => p.match(/>=?([^)]+)/)[1].trim())
-                .map(v => parseInt(v.includes('px') ? v.replace('px', '') / rootFontSize : v))[0]
-              
-              const [lower, upper] = extractTwoClampArgs(decl.value)
-              const slope = `(${upper} - ${lower}) / (${maxScreen} - ${minScreen})`
-              const intercept = `${lower} - ${slope} * ${minScreen}`
-              const clamp = `clamp(${lower}, calc(${intercept} + ${slope} * (100vw)), ${upper})`
-              console.log(clamp)
+                .map(p => p.match(/>=?([^)]+)/)[1].trim())[0]
+
+              console.log('maxScreen', maxScreen)
+              console.log('minScreen', minScreen)
+
+              const maxScreenInt = parseFloat(maxScreen.includes('px') ? maxScreen.replace('px', '') / rootFontSize : maxScreen)
+              const minScreenInt = parseFloat(minScreen.includes('px') ? minScreen.replace('px', '') / rootFontSize : minScreen)
+
+              console.log('maxScreenInt', maxScreenInt)
+              console.log('minScreenInt', minScreenInt)
+
+              const [lower, upper] = extractTwoClampArgs(decl.value).map(val => val.includes('px') ? `${val.replace('px', '') / rootFontSize}rem` : val);
+
+              console.log('lower', lower)
+              console.log('upper', upper)
+
+              const lowerInt = parseFloat(hasUnit(lower) ? lower : `${lower * spacingSize}rem`)
+              const upperInt = parseFloat(hasUnit(upper) ? upper : `${upper * spacingSize}rem`)
+
+              console.log('lowerInt', lowerInt)
+              console.log('upperInt', upperInt)
+
+              const isDescending = lowerInt > upperInt
+              const min = isDescending ? upper : lower
+              const max = isDescending ? lower : upper
+
+              console.log('min', min)
+              console.log('max', max)
+
+              const slopeInt = `((${upperInt} - ${lowerInt}) / (${maxScreenInt} - ${minScreenInt}))`
+              const clamp = `clamp(${hasUnit(min) ? min : `${min * spacingSize}rem`}, calc(${hasUnit(lower) ? lower : `${lower * spacingSize}rem`} + ${slopeInt} * (100vw - ${minScreen})), ${hasUnit(max) ? max : `${max * spacingSize}rem`})`
+
+              console.log('clamp', clamp)
 
               decl.value = clamp
             });

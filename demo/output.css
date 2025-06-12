@@ -7,10 +7,9 @@
       "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
-    --color-red-500: oklch(63.7% 0.237 25.331);
     --color-gray-100: oklch(96.7% 0.003 264.542);
     --color-gray-200: oklch(92.8% 0.006 264.531);
-    --spacing: 0.25rem;
+    --spacing: 1px;
     --text-base: 1rem;
     --text-base--line-height: calc(1.5 / 1);
     --default-font-family: var(--font-sans);
@@ -182,14 +181,6 @@
       padding: 30px;
     }
   }
-  .max-md\:text-\[clamp\(22px\,22px\)\] {
-    font-size: 22px;
-    @media (width >= 40rem) {
-      @media (width < 48rem) {
-        font-size: clamp(22px, 22px);
-      }
-    }
-  }
   .min-\[100px\]\:text-\[clamp\(11px\,11px\)\] {
     @media (width >= 100px) {
       @media (width < 120rem) {
@@ -211,55 +202,17 @@
       line-height: var(--tw-leading, var(--text-base--line-height));
     }
   }
-  .md\:text-\[clamp\(20px\,50px\)\] {
-    @media (width >= 48rem) {
-      @media (width < 120rem) {
-        font-size: clamp(20px, 50px);
-      }
-      @media (width >= 120rem) {
-        font-size: 50px;
-      }
-    }
-  }
-  .md\:max-\[800px\]\:text-\[clamp\(40px\,2vw\,80px\)\] {
+  .md\:max-\[800px\]\:text-\[clamp\(40\,90\)\] {
     @media (width >= 48rem) {
       @media (width < 800px) {
-        font-size: clamp(40px, 2vw, 80px);
-      }
-    }
-  }
-  .md\:max-\[800px\]\:text-\[clamp\(40px\,8px\)\] {
-    @media (width >= 48rem) {
-      @media (width < 800px) {
-        font-size: clamp(40px, calc(40px - (8px - 40px) / (50 - 48) * 48 + (8px - 40px) / (50 - 48) * (100vw)), 8px);
-      }
-    }
-  }
-  .md\:max-\[800px\]\:text-\[clamp\(40px\,80px\)\] {
-    @media (width >= 48rem) {
-      @media (width < 800px) {
-        font-size: clamp(40px, calc(40px - (80px - 40px) / (50 - 48) * 48 + (80px - 40px) / (50 - 48) * (100vw)), 80px);
+        font-size: clamp(2.5rem, calc(2.5rem + ((5.625 - 2.5) / (50 - 48)) * (100vw - 48rem)), 5.625rem);
       }
     }
   }
   .md\:max-\[800px\]\:text-\[clamp\(40px\,90px\)\] {
     @media (width >= 48rem) {
       @media (width < 800px) {
-        font-size: clamp(40px, calc(40px - (90px - 40px) / (50 - 48) * 48 + (90px - 40px) / (50 - 48) * (100vw)), 90px);
-      }
-    }
-  }
-  .md\:max-\[800px\]\:text-red-500 {
-    @media (width >= 48rem) {
-      @media (width < 800px) {
-        color: var(--color-red-500);
-      }
-    }
-  }
-  .md\:max-lg\:pt-\[clamp\(20\,20\)\] {
-    @media (width >= 48rem) {
-      @media (width < 64rem) {
-        padding-top: clamp(20, calc(20 - (20 - 20) / (64 - 48) * 48 + (20 - 20) / (64 - 48) * (100vw)), 20);
+        font-size: clamp(2.5rem, calc(2.5rem + ((5.625 - 2.5) / (50 - 48)) * (100vw - 48rem)), 5.625rem);
       }
     }
   }
