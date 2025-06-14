@@ -14,7 +14,6 @@
     --text-base--line-height: calc(1.5 / 1);
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
-    --breakpoint-3xl: 120rem;
   }
 }
 @layer base {
@@ -171,23 +170,38 @@
     background-color: var(--color-gray-100);
   }
   .p-\[clamp\(xl\,30px\)\] {
-    padding: xl;
+    @media (width < 40rem) {
+      padding: xl;
+    }
     @media (width >= 40rem) {
-      @media (width < 120rem) {
-        padding: clamp(xl, 30px);
+      @media (width < 96rem) {
+        padding: clamp(xl, calc(xl + ((1.875 - NaN) / (96 - 40)) * (100vw - 40rem)), 1.875rem);
       }
     }
-    @media (width >= 120rem) {
-      padding: 30px;
+    @media (width >= 96rem) {
+      padding: 1.875rem;
+    }
+  }
+  .text-\[clamp\(40px\,90px\)\] {
+    @media (width < 40rem) {
+      font-size: 2.5rem;
+    }
+    @media (width >= 40rem) {
+      @media (width < 96rem) {
+        font-size: clamp(2.5rem, calc(2.5rem + ((5.625 - 2.5) / (96 - 40)) * (100vw - 40rem)), 5.625rem);
+      }
+    }
+    @media (width >= 96rem) {
+      font-size: 5.625rem;
     }
   }
   .min-\[100px\]\:text-\[clamp\(11px\,11px\)\] {
     @media (width >= 100px) {
-      @media (width < 120rem) {
-        font-size: clamp(11px, 11px);
+      @media (width < 96rem) {
+        font-size: clamp(0.6875rem, calc(0.6875rem + ((0.6875 - 0.6875) / (96 - 6.25)) * (100vw - 100px)), 0.6875rem);
       }
-      @media (width >= 120rem) {
-        font-size: 11px;
+      @media (width >= 96rem) {
+        font-size: 0.6875rem;
       }
     }
   }
@@ -200,20 +214,6 @@
     @media (width >= 48rem) {
       font-size: var(--text-base);
       line-height: var(--tw-leading, var(--text-base--line-height));
-    }
-  }
-  .md\:max-\[800px\]\:text-\[clamp\(40\,90\)\] {
-    @media (width >= 48rem) {
-      @media (width < 800px) {
-        font-size: clamp(2.5rem, calc(2.5rem + ((5.625 - 2.5) / (50 - 48)) * (100vw - 48rem)), 5.625rem);
-      }
-    }
-  }
-  .md\:max-\[800px\]\:text-\[clamp\(40px\,90px\)\] {
-    @media (width >= 48rem) {
-      @media (width < 800px) {
-        font-size: clamp(2.5rem, calc(2.5rem + ((5.625 - 2.5) / (50 - 48)) * (100vw - 48rem)), 5.625rem);
-      }
     }
   }
 }

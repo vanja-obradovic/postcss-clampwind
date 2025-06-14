@@ -1,17 +1,8 @@
 import postcss from 'postcss';
 import { defaultScreens, formatRegexMatches, convertSortScreens } from './screens.js';
+import { extractTwoClampArgs, convertToRem, generateClamp } from './clamp.js';
 
 const clampwind = (opts = {}) => {
-  // simple extractor: clamp(x,y) → [x,y]
-  const extractTwoClampArgs = (value) => {
-    const m = value.match(/\bclamp\s*\(\s*([^,()]+)\s*,\s*([^,()]+)\s*\)$/);
-    return m ? [m[1].trim(), m[2].trim()] : null;
-  };
-
-  const hasUnit = (value) => {
-    return /[a-zA-Z%]+$/.test(value);
-  }
-
   let rootFontSize = 16;
   let spacingSize = 0.25;
   let screens = defaultScreens || {};
@@ -36,14 +27,14 @@ const clampwind = (opts = {}) => {
                 const key = decl.prop.replace('--breakpoint-', '');
                 rootElementBreakpoints[key] = decl.value;
               }
-              if (decl.prop === '--spacing' && decl.value.includes('px')) {
-                spacingSize = parseFloat(decl.value) / rootFontSize;
-              }
               if (decl.prop === '--text-base' && decl.value.includes('px')) {
                 rootFontSize = parseFloat(decl.value);
               }
               if (decl.prop === 'font-size' && decl.value.includes('px')) {
                 rootFontSize = parseFloat(decl.value);
+              }
+              if (decl.prop === '--spacing') {
+                spacingSize = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize));
               }
             });
             return;
@@ -81,11 +72,11 @@ const clampwind = (opts = {}) => {
                   const key = decl.prop.replace('--breakpoint-', '');
                   themeLayerBreakpoints[key] = decl.value;
                 }
-                if (decl.prop === '--spacing' && decl.value.includes('px')) {
-                  spacingSize = parseFloat(decl.value) / rootFontSize;
-                }
                 if (decl.prop === '--text-base' && decl.value.includes('px')) {
                   rootFontSize = parseFloat(decl.value);
+                }
+                if (decl.prop === '--spacing') {
+                  spacingSize = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize));
                 }
               });
             }
@@ -127,38 +118,41 @@ const clampwind = (opts = {}) => {
           );
           screens = convertSortScreens(screens, rootFontSize);
 
-          // No-media rules: add from smallest to largest breakpoint and outer bounds
+          // No-media rules: add from smallest to largest breakpoint and outerMQ bounds
           noMediaQueries.forEach(({ ruleNode, declNodes }) => {
             declNodes.forEach(decl => {
-              const match = decl.value.match(/clamp\s*\(\s*([^,]+)\s*,\s*([^\)]+)\)/);
-              if (!match) return;
-              const [, lowerRaw, upperRaw] = match;
-              const lower = lowerRaw.trim();
-              const upper = upperRaw.trim();
+
+              const args = extractTwoClampArgs(decl.value);
+              const [lower, upper] = args.map(val => convertToRem(val, rootFontSize, spacingSize));
+              if (!args || !lower || !upper) return;
 
               const screenValues = Object.values(screens);
-              const lowerBP = screenValues[0];
-              const upperBP = screenValues[screenValues.length - 1];
+              const minScreen = screenValues[0];
+              const maxScreen = screenValues[screenValues.length - 1];
 
               // 1) prepend lower bound
+              const lowerMQ = postcss.atRule({ name: 'media', params: `(width < ${minScreen})` });
+              lowerMQ.append(postcss.decl({ prop: decl.prop, value: lower }));
               ruleNode.insertBefore(
                 decl,
-                postcss.decl({ prop: decl.prop, value: lower })
+                lowerMQ
               );
 
               // 2) nested media block
-              const inner = postcss.atRule({ name: 'media', params: `(width < ${upperBP})` });
-              inner.append(decl.clone());
-              const outer = postcss.atRule({ name: 'media', params: `(width >= ${lowerBP})` });
-              outer.append(inner);
-              ruleNode.append(outer);
+              const innerMQ = postcss.atRule({ name: 'media', params: `(width < ${maxScreen})` });
+              const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize)
+              innerMQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
+
+              const outerMQ = postcss.atRule({ name: 'media', params: `(width >= ${minScreen})` });
+              outerMQ.append(innerMQ);
+              ruleNode.append(outerMQ);
 
               // 3) upper bound
-              const upperMedia = postcss.atRule({ name: 'media', params: `(width >= ${upperBP})` });
-              upperMedia.append(
+              const upperMQ = postcss.atRule({ name: 'media', params: `(width >= ${maxScreen})` });
+              upperMQ.append(
                 postcss.decl({ prop: decl.prop, value: upper })
               );
-              ruleNode.append(upperMedia);
+              ruleNode.append(upperMQ);
 
               // 4) remove original clamp decl
               decl.remove();
@@ -168,42 +162,50 @@ const clampwind = (opts = {}) => {
           // Single media queries
           singleMediaQueries.forEach(({ mediaNode, declNodes }) => {
             declNodes.forEach(decl => {
-              const match = decl.value.match(/clamp\s*\(\s*([^,]+)\s*,\s*([^\)]+)\)/);
-              if (!match) return;
-              const [, lowerRaw, upperRaw] = match;
-              const lower = lowerRaw.trim();
-              const upper = upperRaw.trim();
 
-              const screenValues = Object.values(screens);
-              const lowerBP = screenValues[0];
-              const upperBP = screenValues[screenValues.length - 1];
+              const args = extractTwoClampArgs(decl.value);
+              const [lower, upper] = args.map(val => convertToRem(val, rootFontSize, spacingSize));
+              if (!args || !lower || !upper) return;
+
+              const screenValues = Object.values(screens);              
               
               // Create upper breakpoints 
               if (mediaNode.params.includes('>')) {
 
-                const inner = postcss.atRule({ name: 'media', params: `(width < ${upperBP})` });
-                inner.append(decl.clone());
-                mediaNode.append(inner);
+                const minScreen = mediaNode.params.match(/>=?([^)]+)/)[1].trim()
+                const maxScreen = screenValues[screenValues.length - 1];
 
-                const upperMedia = postcss.atRule({ name: 'media', params: `(width >= ${upperBP})` });
-                upperMedia.append(
+                const innerMQ = postcss.atRule({ name: 'media', params: `(width < ${maxScreen})` });
+                const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize)
+                innerMQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
+                mediaNode.append(innerMQ);
+
+                const upperMQ = postcss.atRule({ name: 'media', params: `(width >= ${maxScreen})` });
+                upperMQ.append(
                   postcss.decl({ prop: decl.prop, value: upper })
                 );
-                mediaNode.append(upperMedia);
+                mediaNode.append(upperMQ);
 
                 decl.remove();
 
               } else if (mediaNode.params.includes('<')) {
                 // Create lower breakpoints
-                mediaNode.parent.insertBefore(mediaNode, postcss.decl({ prop: decl.prop, value: lower }));
 
-                const inner = postcss.atRule({ name: 'media', params: mediaNode.params });
-                inner.append(decl.clone());
+                const minScreen = screenValues[0];
+                const maxScreen = mediaNode.params.match(/<([^)]+)/)[1].trim()
 
-                const outer = postcss.atRule({ name: 'media', params: `(width >= ${lowerBP})` });
-                outer.append(inner);
+                const lowerMQ = postcss.atRule({ name: 'media', params: `(width < ${minScreen})` });
+                lowerMQ.append(postcss.decl({ prop: decl.prop, value: lower }));
+                mediaNode.parent.insertBefore(mediaNode, lowerMQ);
 
-                mediaNode.replaceWith(outer);
+                const innerMQ = postcss.atRule({ name: 'media', params: mediaNode.params });
+                const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize)
+                innerMQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
+
+                const outerMQ = postcss.atRule({ name: 'media', params: `(width >= ${minScreen})` });
+                outerMQ.append(innerMQ);
+
+                mediaNode.replaceWith(outerMQ);
 
                 decl.remove();
 
@@ -223,39 +225,11 @@ const clampwind = (opts = {}) => {
                 .filter(p => p.includes('>'))
                 .map(p => p.match(/>=?([^)]+)/)[1].trim())[0]
 
-              console.log('maxScreen', maxScreen)
-              console.log('minScreen', minScreen)
+              const args = extractTwoClampArgs(decl.value);
+              const [lower, upper] = args.map(val => convertToRem(val, rootFontSize, spacingSize));
+              if (!args || !lower || !upper) return;
 
-              const maxScreenInt = parseFloat(maxScreen.includes('px') ? maxScreen.replace('px', '') / rootFontSize : maxScreen)
-              const minScreenInt = parseFloat(minScreen.includes('px') ? minScreen.replace('px', '') / rootFontSize : minScreen)
-
-              console.log('maxScreenInt', maxScreenInt)
-              console.log('minScreenInt', minScreenInt)
-
-              const [lower, upper] = extractTwoClampArgs(decl.value).map(val => val.includes('px') ? `${val.replace('px', '') / rootFontSize}rem` : val);
-
-              console.log('lower', lower)
-              console.log('upper', upper)
-
-              const lowerInt = parseFloat(hasUnit(lower) ? lower : `${lower * spacingSize}rem`)
-              const upperInt = parseFloat(hasUnit(upper) ? upper : `${upper * spacingSize}rem`)
-
-              console.log('lowerInt', lowerInt)
-              console.log('upperInt', upperInt)
-
-              const isDescending = lowerInt > upperInt
-              const min = isDescending ? upper : lower
-              const max = isDescending ? lower : upper
-
-              console.log('min', min)
-              console.log('max', max)
-
-              const slopeInt = `((${upperInt} - ${lowerInt}) / (${maxScreenInt} - ${minScreenInt}))`
-              const clamp = `clamp(${hasUnit(min) ? min : `${min * spacingSize}rem`}, calc(${hasUnit(lower) ? lower : `${lower * spacingSize}rem`} + ${slopeInt} * (100vw - ${minScreen})), ${hasUnit(max) ? max : `${max * spacingSize}rem`})`
-
-              console.log('clamp', clamp)
-
-              decl.value = clamp
+              decl.value = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize)
             });
           });
         }

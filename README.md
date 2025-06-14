@@ -111,17 +111,17 @@ This will generate the following css:
 - ~~I need to also add external ranges for these cases, if there are no breakpoints or only one breakpoint, the plugin should add the external range to the generated CSS. 
 Eg. `text-[clamp(16px,50px)]` should generate `@media (width < 40rem) { ... } @media (width >= 96rem) { ... }`~~
 - ~~If --spacing is set to px and clamped values have no unit, do the conversion in js by reading the --spacing value and divide it by the root font size~~
-- if --spacing is set to rem, and clamped values have no unit, add `var(--spacing) * value` to the clamped values
-- if clamped value has a unit different than px? No conversion? 
+- ~~if --spacing is set to rem, and clamped values have no unit, add `var(--spacing) * value` to the clamped values~~
+- ~~if clamped value has a unit different than px? No conversion?~~
 - if clamped value is a css variable, wrap it in a `var()`
 - maybe read all the custom properties values from the theme, store them in a map and use them whenever they are referenced in the clamped values, and convert them to rem if needed
 - output a comment in the generated CSS if there are errors (clamped values have mismatched units, not allowed units, etc..)
-- Clean up the code and make transformations more readable
-- if clamped value has a token (eg. `xl`), do nothing, not supported yet, maybe in the future I could get the default value from the default theme
+- ~~Clean up the code and make transformations more readable~~
+- add error messages for invalid values as css comments
 - Check if the pxToRem plugin does conversions before the plugin runs
 - Check if it works well with vite
 - ~~support decreasing values for breakpoints where minValue is greater than maxValue~~
-- support negative values
+- ~~support negative values~~
 - ~~Check how it works with mixing breakpoints, eg. `md:max-lg:` and `max-lg:md:` are both valid~~
 - support container queries
 
