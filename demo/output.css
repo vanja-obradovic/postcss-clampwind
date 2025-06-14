@@ -10,6 +10,7 @@
     --color-gray-100: oklch(96.7% 0.003 264.542);
     --color-gray-200: oklch(92.8% 0.006 264.531);
     --spacing: 1px;
+    --container-sm: 120rem;
     --text-base: 1rem;
     --text-base--line-height: calc(1.5 / 1);
     --default-font-family: var(--font-sans);
@@ -182,19 +183,6 @@
       padding: 1.875rem;
     }
   }
-  .text-\[clamp\(40px\,90px\)\] {
-    @media (width < 40rem) {
-      font-size: 2.5rem;
-    }
-    @media (width >= 40rem) {
-      @media (width < 96rem) {
-        font-size: clamp(2.5rem, calc(2.5rem + ((5.625 - 2.5) / (96 - 40)) * (100vw - 40rem)), 5.625rem);
-      }
-    }
-    @media (width >= 96rem) {
-      font-size: 5.625rem;
-    }
-  }
   .min-\[100px\]\:text-\[clamp\(11px\,11px\)\] {
     @media (width >= 100px) {
       @media (width < 96rem) {
@@ -210,10 +198,22 @@
       padding: calc(var(--spacing) * 3);
     }
   }
-  .md\:text-base {
-    @media (width >= 48rem) {
+  .\@md\:text-base {
+    @container (width >= 28rem) {
       font-size: var(--text-base);
       line-height: var(--tw-leading, var(--text-base--line-height));
+    }
+  }
+  .\@md\:max-\[800px\]\:text-\[clamp\(40px\,90px\)\] {
+    @container (width >= 28rem) {
+      @media (width < 40rem) {
+        font-size: 2.5rem;
+      }
+      @media (width >= 40rem) {
+        @media (width < 800px) {
+          font-size: clamp(2.5rem, calc(2.5rem + ((5.625 - 2.5) / (50 - 40)) * (100vw - 40rem)), 5.625rem);
+        }
+      }
     }
   }
 }
@@ -236,5 +236,3 @@
     }
   }
 }
-
-

@@ -1,14 +1,18 @@
 import postcss from 'postcss';
-import { defaultScreens, formatRegexMatches, convertSortScreens } from './screens.js';
+import { defaultScreens, defaultContainerScreens, formatBreakpointsRegexMatches, formatContainerBreakpointsRegexMatches, convertSortScreens } from './screens.js';
 import { extractTwoClampArgs, convertToRem, generateClamp } from './clamp.js';
 
 const clampwind = (opts = {}) => {
   let rootFontSize = 16;
   let spacingSize = 0.25;
   let screens = defaultScreens || {};
+  let containerScreens = defaultContainerScreens || {};
   let defaultLayerBreakpoints = {};
+  let defaultLayerContainerBreakpoints = {};
   let themeLayerBreakpoints = {};
+  let themeLayerContainerBreakpoints = {};
   let rootElementBreakpoints = {};
+  let rootElementContainerBreakpoints = {};
 
   // Store node references + their clamp decl nodes for deferred mutation
   const noMediaQueries = [];
@@ -26,6 +30,10 @@ const clampwind = (opts = {}) => {
               if (decl.prop.startsWith('--breakpoint-')) {
                 const key = decl.prop.replace('--breakpoint-', '');
                 rootElementBreakpoints[key] = decl.value;
+              }
+              if (decl.prop.startsWith('--container-')) {
+                const key = decl.prop.replace('--container-', '@');
+                rootElementContainerBreakpoints[key] = decl.value;
               }
               if (decl.prop === '--text-base' && decl.value.includes('px')) {
                 rootFontSize = parseFloat(decl.value);
@@ -64,13 +72,22 @@ const clampwind = (opts = {}) => {
             if (atRule.params === 'default' && !Object.keys(defaultLayerBreakpoints).length) {
               const css = atRule.source.input.css;
               const matches = css.match(/--breakpoint-[^:]+:\s*[^;]+/g) || [];
-              defaultLayerBreakpoints = formatRegexMatches(matches);
+              defaultLayerBreakpoints = formatBreakpointsRegexMatches(matches);
+            }
+            if (atRule.params === 'default' && !Object.keys(defaultLayerContainerBreakpoints).length) {
+              const css = atRule.source.input.css;
+              const matches = css.match(/--container-[^:]+:\s*[^;]+/g) || [];
+              defaultLayerContainerBreakpoints = formatContainerBreakpointsRegexMatches(matches);
             }
             if (atRule.params === 'theme') {
               atRule.walkDecls(decl => {
                 if (decl.prop.startsWith('--breakpoint-')) {
                   const key = decl.prop.replace('--breakpoint-', '');
                   themeLayerBreakpoints[key] = decl.value;
+                }
+                if (decl.prop.startsWith('--container-')) {
+                  const key = decl.prop.replace('--container-', '@');
+                  themeLayerContainerBreakpoints[key] = decl.value;
                 }
                 if (decl.prop === '--text-base' && decl.value.includes('px')) {
                   rootFontSize = parseFloat(decl.value);
@@ -104,6 +121,30 @@ const clampwind = (opts = {}) => {
               singleMediaQueries.push({ mediaNode: atRule, declNodes });
             }
             mediaProperties.set(atRule, declNodes);
+          },
+
+          container(atRule) {
+            const isNested =
+              atRule.parent?.type === 'atrule' && atRule.parent.name === 'container';
+
+            const declNodes = [];
+            for (const node of atRule.nodes || []) {
+              if (node.type === 'decl' && extractTwoClampArgs(node.value)) {
+                declNodes.push(node);
+              }
+            }
+            if (!declNodes.length) return;
+
+            if (isNested) {
+              doubleNestedMediaQueries.push({
+                parentNode: atRule.parent,
+                mediaNode: atRule,
+                declNodes
+              });
+            } else {
+              singleMediaQueries.push({ mediaNode: atRule, declNodes });
+            }
+            mediaProperties.set(atRule, declNodes);
           }
         },
 
@@ -116,7 +157,16 @@ const clampwind = (opts = {}) => {
             rootElementBreakpoints,
             themeLayerBreakpoints
           );
-          screens = convertSortScreens(screens, rootFontSize);
+          screens = convertSortScreens(screens, rootFontSize,);
+
+          containerScreens = Object.assign(
+            {},
+            containerScreens,
+            defaultLayerContainerBreakpoints,
+            rootElementContainerBreakpoints,
+            themeLayerContainerBreakpoints
+          );
+          containerScreens = convertSortScreens(containerScreens, rootFontSize);
 
           // No-media rules: add from smallest to largest breakpoint and outerMQ bounds
           noMediaQueries.forEach(({ ruleNode, declNodes }) => {
@@ -216,6 +266,9 @@ const clampwind = (opts = {}) => {
           // Nested-media queries
           doubleNestedMediaQueries.forEach(({ parentNode, mediaNode, declNodes }) => {
             declNodes.forEach(decl => { 
+              // console.log(parentNode.name, mediaNode.name)
+              if (parentNode.name != mediaNode.name) return;
+              const containerQuery = parentNode.name === 'container' || mediaNode.name === 'container'
 
               const maxScreen = ([parentNode.params, mediaNode.params])
                 .filter(p => p.includes('<'))
@@ -229,7 +282,7 @@ const clampwind = (opts = {}) => {
               const [lower, upper] = args.map(val => convertToRem(val, rootFontSize, spacingSize));
               if (!args || !lower || !upper) return;
 
-              decl.value = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize)
+              decl.value = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize, containerQuery)
             });
           });
         }

@@ -25,6 +25,7 @@
 @theme static {
 
  /* --breakpoint-3xl: 120rem; */
+ --container-sm: 120rem;
 }
 
 @theme {
@@ -40,5 +41,3 @@
   font-size: 24px;
   line-height: 28px;
 }
-
-

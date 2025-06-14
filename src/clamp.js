@@ -48,15 +48,17 @@ const convertToRem = (value, rootFontSize, spacingSize) => {
  * @param {string} maxScreen - The maximum screen size
  * @param {number} rootFontSize - The root font size
  * @param {number} spacingSize - The spacing size
- * @returns {string} The generated clamp function
+ * @param {boolean} containerQuery - Whether to use container queries
+ * @returns {string} The generated clamp function,
  */
 const generateClamp = (
   lower,
   upper,
   minScreen,
   maxScreen,
-  rootFontSize,
-  spacingSize
+  rootFontSize = 16,
+  spacingSize = 0.25,
+  containerQuery = false
 ) => {
   const maxScreenInt = parseFloat(
     convertToRem(maxScreen, rootFontSize, spacingSize)
@@ -72,8 +74,10 @@ const generateClamp = (
   const min = isDescending ? upper : lower;
   const max = isDescending ? lower : upper;
 
+  const widthUnit = containerQuery ? `100cqw` : `100vw`;
+
   const slopeInt = `((${upperInt} - ${lowerInt}) / (${maxScreenInt} - ${minScreenInt}))`;
-  const clamp = `clamp(${min}, calc(${lower} + ${slopeInt} * (100vw - ${minScreen})), ${max})`;
+  const clamp = `clamp(${min}, calc(${lower} + ${slopeInt} * (${widthUnit} - ${minScreen})), ${max})`;
 
   return clamp;
 };
