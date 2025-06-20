@@ -1,6 +1,6 @@
 import postcss from 'postcss';
 import { defaultScreens, defaultContainerScreens, formatBreakpointsRegexMatches, formatContainerBreakpointsRegexMatches, convertSortScreens } from './screens.js';
-import { extractTwoClampArgs, convertToRem, generateClamp } from './clamp.js';
+import { extractTwoValidClampArgs, convertToRem, generateClamp } from './clamp.js';
 
 const clampwind = (opts = {}) => {
   let rootFontSize = 16;
@@ -14,17 +14,20 @@ const clampwind = (opts = {}) => {
   let rootElementBreakpoints = {};
   let rootElementContainerBreakpoints = {};
 
-  // Store node references + their clamp decl nodes for deferred mutation
+  // Store PostCSS AST node references for deferred mutation
   const noMediaQueries = [];
   const singleMediaQueries = [];
+  const singleContainerQueries = [];
   const doubleNestedMediaQueries = [];
-  const mediaProperties = new Map();
+  const doubleNestedContainerQueries = [];
 
   return {
     postcssPlugin: 'clampwind',
     prepare() {
       return {
+        // MARK: Rule
         Rule(rule) {
+          // Collect theme variables from :root
           if (rule.selector === ':root') {
             rule.walkDecls(decl => {
               if (decl.prop.startsWith('--breakpoint-')) {
@@ -48,26 +51,29 @@ const clampwind = (opts = {}) => {
             return;
           }
 
-          // collect direct clamp() decl nodes
+          // Collect clamp() decl in no-media rules
           const declNodes = [];
           for (const node of rule.nodes || []) {
-            if (node.type === 'decl' && extractTwoClampArgs(node.value)) {
+            if (node.type === 'decl' && extractTwoValidClampArgs(node.value)) {
               declNodes.push(node);
             }
           }
 
-          // skip if any @media child
           const hasMediaChild = (rule.nodes || []).some(
             n => n.type === 'atrule' && n.name === 'media'
           );
 
+          // If there are valid clamp() decls and no @media child, add to noMediaQueries
           if (declNodes.length && !hasMediaChild) {
             noMediaQueries.push({ ruleNode: rule, declNodes });
-            mediaProperties.set(rule, declNodes);
           }
         },
 
+        // MARK: AtRule
         AtRule: {
+
+          // MARK: └Layer
+          // Collect theme variables from @layer
           layer(atRule) {
             if (atRule.params === 'default' && !Object.keys(defaultLayerBreakpoints).length) {
               const css = atRule.source.input.css;
@@ -99,57 +105,68 @@ const clampwind = (opts = {}) => {
             }
           },
 
+          // MARK: └Media
+          // Collect clamp() decls from single @media and nested @media
           media(atRule) {
-            const isNested =
-              atRule.parent?.type === 'atrule' && atRule.parent.name === 'media';
+            const isNested = atRule.parent?.type === 'atrule';
+            const isSameAtRule = atRule.parent?.name === atRule.name;
 
             const declNodes = [];
             for (const node of atRule.nodes || []) {
-              if (node.type === 'decl' && extractTwoClampArgs(node.value)) {
+              if (node.type === 'decl' && extractTwoValidClampArgs(node.value)) {
                 declNodes.push(node);
               }
             }
             if (!declNodes.length) return;
 
-            if (isNested) {
+            if (isNested && isSameAtRule) {
               doubleNestedMediaQueries.push({
                 parentNode: atRule.parent,
                 mediaNode: atRule,
                 declNodes
               });
+            } else if (isNested && !isSameAtRule) {
+              declNodes.forEach(decl => {
+                decl.value = ` ${decl.value} /* Invalid nested @media and @container rules */`;
+              });
             } else {
               singleMediaQueries.push({ mediaNode: atRule, declNodes });
             }
-            mediaProperties.set(atRule, declNodes);
           },
 
+          // MARK: └Container
+          // Collect clamp() decls from single @container and nested @container
           container(atRule) {
-            const isNested =
-              atRule.parent?.type === 'atrule' && atRule.parent.name === 'container';
+            const isNested = atRule.parent?.type === 'atrule';
+            const isSameAtRule = atRule.parent?.name === atRule.name;
 
             const declNodes = [];
             for (const node of atRule.nodes || []) {
-              if (node.type === 'decl' && extractTwoClampArgs(node.value)) {
+              if (node.type === 'decl' && extractTwoValidClampArgs(node.value)) {
                 declNodes.push(node);
               }
             }
             if (!declNodes.length) return;
 
-            if (isNested) {
-              doubleNestedMediaQueries.push({
+            if (isNested && isSameAtRule) {
+              doubleNestedContainerQueries.push({
                 parentNode: atRule.parent,
                 mediaNode: atRule,
                 declNodes
               });
+            } else if (isNested && !isSameAtRule) {
+              declNodes.forEach(decl => {
+                decl.value = ` ${decl.value} /* Invalid nested @media and @container rules */`;
+              });
             } else {
-              singleMediaQueries.push({ mediaNode: atRule, declNodes });
+              singleContainerQueries.push({ mediaNode: atRule, declNodes });
             }
-            mediaProperties.set(atRule, declNodes);
           }
         },
 
+        // MARK: OnceExit
         OnceExit() {
-          // Join, convert and sort screens breakpoints
+          // Join, convert and sort screens breakpoints from theme, root and layer
           screens = Object.assign(
             {},
             screens,
@@ -159,6 +176,7 @@ const clampwind = (opts = {}) => {
           );
           screens = convertSortScreens(screens, rootFontSize,);
 
+          // Join, convert and sort container breakpoints from theme, root and layer
           containerScreens = Object.assign(
             {},
             containerScreens,
@@ -168,13 +186,17 @@ const clampwind = (opts = {}) => {
           );
           containerScreens = convertSortScreens(containerScreens, rootFontSize);
 
-          // No-media rules: add from smallest to largest breakpoint and outerMQ bounds
+          // MARK: └No MQ
+          // No-media rules: generate from smallest to largest breakpoint and outerMQ bounds
           noMediaQueries.forEach(({ ruleNode, declNodes }) => {
             declNodes.forEach(decl => {
 
-              const args = extractTwoClampArgs(decl.value);
+              const args = extractTwoValidClampArgs(decl.value);
               const [lower, upper] = args.map(val => convertToRem(val, rootFontSize, spacingSize));
-              if (!args || !lower || !upper) return;
+              if (!args || !lower || !upper) {
+                decl.value = ` ${decl.value} /* Invalid clamp() values */`;
+                return;
+              }
 
               const screenValues = Object.values(screens);
               const minScreen = screenValues[0];
@@ -209,17 +231,21 @@ const clampwind = (opts = {}) => {
             });
           });
 
-          // Single media queries
+          // MARK: └Single MQ
+          // Single media queries: generate from the defined media query breakpoint to the upper or lower bound depending on the direction
           singleMediaQueries.forEach(({ mediaNode, declNodes }) => {
             declNodes.forEach(decl => {
 
-              const args = extractTwoClampArgs(decl.value);
+              const args = extractTwoValidClampArgs(decl.value);
               const [lower, upper] = args.map(val => convertToRem(val, rootFontSize, spacingSize));
-              if (!args || !lower || !upper) return;
+              if (!args || !lower || !upper) {
+                decl.value = ` ${decl.value} /* Invalid clamp() values */`;
+                return;
+              }
 
               const screenValues = Object.values(screens);              
               
-              // Create upper breakpoints 
+              // 1) Create upper breakpoints 
               if (mediaNode.params.includes('>')) {
 
                 const minScreen = mediaNode.params.match(/>=?([^)]+)/)[1].trim()
@@ -239,7 +265,7 @@ const clampwind = (opts = {}) => {
                 decl.remove();
 
               } else if (mediaNode.params.includes('<')) {
-                // Create lower breakpoints
+                // 2) Create lower breakpoints
 
                 const minScreen = screenValues[0];
                 const maxScreen = mediaNode.params.match(/<([^)]+)/)[1].trim()
@@ -263,12 +289,68 @@ const clampwind = (opts = {}) => {
             });
           });
 
-          // Nested-media queries
+          // MARK: └Single CQ
+          // Single container queries: generate from the defined container query breakpoint to the upper or lower bound depending on the direction
+          singleContainerQueries.forEach(({ mediaNode, declNodes }) => {
+            declNodes.forEach(decl => {
+
+              const args = extractTwoValidClampArgs(decl.value);
+              const [lower, upper] = args.map(val => convertToRem(val, rootFontSize, spacingSize));
+              if (!args || !lower || !upper) {
+                decl.value = ` ${decl.value} /* Invalid clamp() values */`;
+                return;
+              }
+
+              const screenValues = Object.values(containerScreens);              
+              
+              // 1) Create upper breakpoints 
+              if (mediaNode.params.includes('>')) {
+
+                const minContainer = mediaNode.params.match(/>=?([^)]+)/)[1].trim()
+                const maxContainer = screenValues[screenValues.length - 1];
+
+                const innerCQ = postcss.atRule({ name: 'container', params: `(width < ${maxContainer})` });
+                const clamp = generateClamp(lower, upper, minContainer, maxContainer, rootFontSize, spacingSize, true)
+                innerCQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
+                mediaNode.append(innerCQ);
+
+                const upperCQ = postcss.atRule({ name: 'container', params: `(width >= ${maxContainer})` });
+                upperCQ.append(
+                  postcss.decl({ prop: decl.prop, value: upper })
+                );
+                mediaNode.append(upperCQ);
+
+                decl.remove();
+
+              } else if (mediaNode.params.includes('<')) {
+                // 2) Create lower breakpoints
+
+                const minContainer = screenValues[0];
+                const maxContainer = mediaNode.params.match(/<([^)]+)/)[1].trim()
+
+                const lowerCQ = postcss.atRule({ name: 'container', params: `(width < ${minContainer})` });
+                lowerCQ.append(postcss.decl({ prop: decl.prop, value: lower }));
+                mediaNode.parent.insertBefore(mediaNode, lowerCQ);
+
+                const innerCQ = postcss.atRule({ name: 'container', params: mediaNode.params });
+                const clamp = generateClamp(lower, upper, minContainer, maxContainer, rootFontSize, spacingSize, true)
+                innerCQ.append(postcss.decl({ prop: decl.prop, value: clamp }));
+
+                const outerCQ = postcss.atRule({ name: 'container', params: `(width >= ${minContainer})` });
+                outerCQ.append(innerCQ);
+
+                mediaNode.replaceWith(outerCQ);
+
+                decl.remove();
+
+              }
+            });
+          });
+
+          // MARK: └Double MQ
+          // Nested-media queries: generate from between the two defined media query breakpoints
           doubleNestedMediaQueries.forEach(({ parentNode, mediaNode, declNodes }) => {
             declNodes.forEach(decl => { 
-              // console.log(parentNode.name, mediaNode.name)
-              if (parentNode.name != mediaNode.name) return;
-              const containerQuery = parentNode.name === 'container' || mediaNode.name === 'container'
 
               const maxScreen = ([parentNode.params, mediaNode.params])
                 .filter(p => p.includes('<'))
@@ -278,11 +360,38 @@ const clampwind = (opts = {}) => {
                 .filter(p => p.includes('>'))
                 .map(p => p.match(/>=?([^)]+)/)[1].trim())[0]
 
-              const args = extractTwoClampArgs(decl.value);
+              const args = extractTwoValidClampArgs(decl.value);
               const [lower, upper] = args.map(val => convertToRem(val, rootFontSize, spacingSize));
-              if (!args || !lower || !upper) return;
+              if (!args || !lower || !upper) {
+                decl.value = ` ${decl.value} /* Invalid clamp() values */`;
+                return;
+              }
 
-              decl.value = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize, containerQuery)
+              decl.value = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize, false)
+            });
+          });
+
+          // MARK: └Double CQ
+          // Nested-container queries: generate from between the two defined container query breakpoints
+          doubleNestedContainerQueries.forEach(({ parentNode, mediaNode, declNodes }) => {
+            declNodes.forEach(decl => { 
+
+              const maxContainer = ([parentNode.params, mediaNode.params])
+                .filter(p => p.includes('<'))
+                .map(p => p.match(/<([^)]+)/)[1].trim())[0]
+              
+              const minContainer = ([parentNode.params, mediaNode.params])
+                .filter(p => p.includes('>'))
+                .map(p => p.match(/>=?([^)]+)/)[1].trim())[0]
+
+              const args = extractTwoValidClampArgs(decl.value);
+              const [lower, upper] = args.map(val => convertToRem(val, rootFontSize, spacingSize));
+              if (!args || !lower || !upper) {
+                decl.value = ` ${decl.value} /* Invalid clamp() values */`;
+                return;
+              }
+
+              decl.value = generateClamp(lower, upper, minContainer, maxContainer, rootFontSize, spacingSize, true)
             });
           });
         }

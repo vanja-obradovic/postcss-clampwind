@@ -3,41 +3,37 @@
  * @param {string} value - The value to extract the clamp args from
  * @returns {Array<string>} The lower and upper clamp args
  */
-const extractTwoClampArgs = (value) => {
+const extractTwoValidClampArgs = (value) => {
   const m = value.match(/\bclamp\s*\(\s*([^,()]+)\s*,\s*([^,()]+)\s*\)$/);
   return m ? [m[1].trim(), m[2].trim()] : null;
 };
 
 /**
- * Check if a value has a unit
- * @param {string} value - The value to check
- * @returns {boolean} True if the value has a unit, false otherwise
+ * Extract the unit from a value
+ * @param {string} value - The value to extract the unit from
+ * @returns {string|null} The unit or null if no unit found
  */
-const hasUnit = (value) => {
-  return /[a-zA-Z%]+$/.test(value);
+const extractUnit = (value) => {
+  const match = value.match(/[a-zA-Z%]+$/);
+  return match ? match[0] : null;
 };
-
-/**
- * List of units that are not allowed
- * @type {Array<string>}
- */
-const notAllowedUnits = ["%"];
 
 // convert to rem if px or has unit, otherwise return value
 const convertToRem = (value, rootFontSize, spacingSize) => {
-  if (notAllowedUnits.some((unit) => value.includes(unit))) {
-    return null;
+  const unit = extractUnit(value);
+  if (!unit) {
+    return `${value * spacingSize}rem`;
   }
 
-  if (value.includes("px")) {
+  if (unit === "px") {
     return `${value.replace("px", "") / rootFontSize}rem`;
   }
 
-  if (hasUnit(value)) {
+  if (unit === "rem") {
     return value;
   }
 
-  return `${value * spacingSize}rem`;
+  return null;
 };
 
 /**
@@ -82,4 +78,4 @@ const generateClamp = (
   return clamp;
 };
 
-export { extractTwoClampArgs, convertToRem, generateClamp };
+export { extractTwoValidClampArgs, convertToRem, generateClamp };

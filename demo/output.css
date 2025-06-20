@@ -171,16 +171,16 @@
     background-color: var(--color-gray-100);
   }
   .p-\[clamp\(xl\,30px\)\] {
+    padding:  clamp(xl, 30px) /* Invalid clamp() values */;
+  }
+  .max-\[800px\]\:text-\[clamp\(40px\,90\)\] {
     @media (width < 40rem) {
-      padding: xl;
+      font-size: 2.5rem;
     }
     @media (width >= 40rem) {
-      @media (width < 96rem) {
-        padding: clamp(xl, calc(xl + ((1.875 - NaN) / (96 - 40)) * (100vw - 40rem)), 1.875rem);
+      @media (width < 800px) {
+        font-size: clamp(2.5rem, calc(2.5rem + ((5.625 - 2.5) / (50 - 40)) * (100vw - 40rem)), 5.625rem);
       }
-    }
-    @media (width >= 96rem) {
-      padding: 1.875rem;
     }
   }
   .min-\[100px\]\:text-\[clamp\(11px\,11px\)\] {
@@ -202,18 +202,6 @@
     @container (width >= 28rem) {
       font-size: var(--text-base);
       line-height: var(--tw-leading, var(--text-base--line-height));
-    }
-  }
-  .\@md\:max-\[800px\]\:text-\[clamp\(40px\,90px\)\] {
-    @container (width >= 28rem) {
-      @media (width < 40rem) {
-        font-size: 2.5rem;
-      }
-      @media (width >= 40rem) {
-        @media (width < 800px) {
-          font-size: clamp(2.5rem, calc(2.5rem + ((5.625 - 2.5) / (50 - 40)) * (100vw - 40rem)), 5.625rem);
-        }
-      }
     }
   }
 }
