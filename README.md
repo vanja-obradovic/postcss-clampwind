@@ -101,6 +101,14 @@ This will generate the following css:
 }
 ```
 
+### Clamp between custom properties
+
+You can also use custom properties in your clamped values, for example:
+
+```html
+<div class="text-[clamp(var(--text-sm),50px)]"></div>
+```
+
 ## TODO
 
 - ~~Merge and order custom breakpoints with Tailwind default ones~~
@@ -113,8 +121,7 @@ Eg. `text-[clamp(16px,50px)]` should generate `@media (width < 40rem) { ... } @m
 - ~~If --spacing is set to px and clamped values have no unit, do the conversion in js by reading the --spacing value and divide it by the root font size~~
 - ~~if --spacing is set to rem, and clamped values have no unit, add `var(--spacing) * value` to the clamped values~~
 - ~~if clamped value has a unit different than px? No conversion?~~
-- if clamped value is a css variable, wrap it in a `var()`
-- maybe read all the custom properties values from the theme, store them in a map and use them whenever they are referenced in the clamped values, and convert them to rem if needed
+- ~~read all the custom properties values from the theme, store them in a map and use them whenever they are referenced in the clamped values, and convert them to rem if needed~~
 - ~~output a comment in the generated CSS if there are errors (clamped values have mismatched units, not allowed units, etc..)~~
 - ~~Clean up the code and make transformations more readable~~
 - ~~add error messages for invalid values as css comments~~

@@ -11,6 +11,7 @@
     --color-gray-200: oklch(92.8% 0.006 264.531);
     --spacing: 1px;
     --container-sm: 120rem;
+    --text-sm: 0.875rem;
     --text-base: 1rem;
     --text-base--line-height: calc(1.5 / 1);
     --default-font-family: var(--font-sans);
@@ -173,13 +174,13 @@
   .p-\[clamp\(xl\,30px\)\] {
     padding:  clamp(xl, 30px) /* Invalid clamp() values */;
   }
-  .max-\[800px\]\:text-\[clamp\(40px\,90\)\] {
+  .max-\[800px\]\:text-\[clamp\(40px\,--text-sm\)\] {
     @media (width < 40rem) {
       font-size: 2.5rem;
     }
     @media (width >= 40rem) {
       @media (width < 800px) {
-        font-size: clamp(2.5rem, calc(2.5rem + ((5.625 - 2.5) / (50 - 40)) * (100vw - 40rem)), 5.625rem);
+        font-size: clamp(0.875rem, calc(2.5rem + ((0.875 - 2.5) / (50 - 40)) * (100vw - 40rem)), 2.5rem);
       }
     }
   }
