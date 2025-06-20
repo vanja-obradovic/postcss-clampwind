@@ -14,8 +14,14 @@ const extractTwoValidClampArgs = (value) => {
  * @returns {string|null} The unit or null if no unit found
  */
 const extractUnit = (value) => {
-  const match = value.match(/\D+$/);
-  return match ? match[0] : null;
+  const trimmedValue = value.replace(/\s+/g, '');
+  if (trimmedValue.includes('--')) {
+    const match = trimmedValue.replace(/var\(([^,)]+)[^)]*\)/, '$1');
+    return match ? match : null;
+  } else {
+    const match = trimmedValue.match(/\D+$/);
+    return match ? match[0] : null;
+  }
 };
 
 /**
@@ -40,12 +46,10 @@ const formatProperty = (value) => {
 const convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) => {
   const unit = extractUnit(value);
   const formattedProperty = formatProperty(value);
+  const fallbackValue = value.includes('var(') && value.includes(',') ? value.replace(/var\([^,]+,\s*([^)]+)\)/, '$1') : null;
 
   if (!unit) {
     return `${value * spacingSize}rem`;
-  }
-  if (customProperties[formattedProperty]) {
-    return `${customProperties[formattedProperty]}rem`;
   }
 
   if (unit === "px") {
@@ -54,6 +58,25 @@ const convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) =
 
   if (unit === "rem") {
     return value;
+  }
+
+  if (customProperties[formattedProperty]) {
+    return `${customProperties[formattedProperty]}rem`;
+  }
+
+  if (formattedProperty && !customProperties[formattedProperty] && fallbackValue) {
+    const fallbackUnit = extractUnit(fallbackValue);
+
+    if (!fallbackUnit) {
+      return `${fallbackValue * spacingSize}rem`;
+    }
+
+    if (fallbackUnit === "px") {
+      return `${fallbackValue.replace("px", "") / rootFontSize}rem`;
+    }
+    if (fallbackUnit === "rem") {
+      return fallbackValue;
+    }
   }
 
   return null;

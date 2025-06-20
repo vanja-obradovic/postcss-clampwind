@@ -103,11 +103,18 @@ This will generate the following css:
 
 ### Clamp between custom properties
 
-You can also use custom properties in your clamped values, for example:
+You can also use custom properties in your clamped values, for example like this:
+
+```html
+<div class="text-[clamp(--text-sm,50px)]"></div>
+```
+or like this:
 
 ```html
 <div class="text-[clamp(var(--text-sm),50px)]"></div>
 ```
+
+
 
 ## TODO
 
