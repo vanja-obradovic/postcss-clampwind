@@ -1,6 +1,6 @@
 # clampwind
 
-A plugin for Tailwind CSS to create fluid variants of any Tailwind CSS utility.
+A PostCSS plugin to create fluid clamp values for any Tailwind CSS utility.
 
 
 ## Installation
