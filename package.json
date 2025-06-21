@@ -1,6 +1,6 @@
 {
   "name": "clampwind",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A PostCSS plugin to create fluid clamp values for any Tailwind CSS utility",
   "main": "src/index.js",
   "type": "module",

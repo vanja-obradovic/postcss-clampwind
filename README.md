@@ -1,7 +1,26 @@
 # clampwind
 
-A PostCSS plugin to create fluid clamp values for any Tailwind CSS utility.
+A PostCSS plugin that transforms any two‑argument `clamp()` call into a fully fluid value, seamlessly integrating with Tailwind CSS utilities.
 
+## How it works
+
+Instead of the standard three-value `clamp(min, preferred, max)`, you supply just a minimum and maximum:
+
+```html
+<div class="text-[clamp(16px,50px)]"></div>
+```
+
+This will generate the following CSS:
+
+```css
+.text-\[clamp\(16px\,50px\)\] {
+  @media (width >= 40rem) { /* 640px */
+    @media (width < 96rem) { /* 1536px */
+      font-size: clamp(1rem, calc(...) , 3.125rem);
+    }
+  }
+}
+```
 
 ## Installation
 
@@ -44,31 +63,75 @@ export default {
 
 ## Features
 
-- **Interchangeable px / rem units**
+### Interchangeable px / rem units
+
 Allow clamped values to use either px or rem interchangeably.
 
-- **Tailwind size variable clamping**
-Enable clamping directly on Tailwind’s predefined size tokens (e.g. `--text-lg`).
+```html
+<div class="text-[clamp(1rem,50px)]"></div>
+```
 
-- **CSS custom property support**
-Permit use of CSS variables (--*) within clamped expressions.
+### Use Tailwind breakpoint modifiers
 
-- **Container query compatibility**
-Automatically adapt clamped values based on container query breakpoints.
+Clamp values within a specific range by using Tailwind breakpoint modifiers.
 
-- **Decreasing & negative ranges**
-Support clamped ranges that shrink or go below zero.
+```html
+<div class="md:max-lg:text-[clamp(16px,50px)]"></div>
+```
+### Unitless clamping
 
-- **Unitless clamping**
 If no unit is specified, default to your theme’s `--spacing` scale.
 
-- **Error reporting via CSS comments**
-Output validation errors as in‑CSS comments for easy debugging.
+```html
+<div class="text-[clamp(16,50)]"></div>
+```
+
+### Use Tailwind size variables
+
+Clamp using Tailwind’s predefined size tokens.
+
+```html
+<div class="text-[clamp(--text-sm,50px)]"></div>
+```
+
+### Use CSS custom properties
+
+Clamp using CSS custom properties.
+
+```html
+<div class="text-[clamp(--custom-value,50px)]"></div>
+```
+
+### Container query support
+
+Clamp values based on container query breakpoints.
+
+```html
+<div class="@md:text-[clamp(16px,50px)]"></div>
+```
+
+### Decreasing & negative ranges
+
+Support clamped ranges that shrink or go below zero.
+
+```html
+<div class="text-[clamp(50px,16px)]"></div>
+```
+
+### Error reporting via CSS comments
+
+Output validation errors as CSS comments for easy debugging.
+
+```css
+.text-\[clamp\(16%\,50px\)\] {
+  font-size: clamp(16%,50px); /* Invalid clamp() values */
+}
+```
 
 
 ## Usage
 
-To use this plugin you need to use the `clamp()` function but only with **two arguments,** the first one is the minimum value and the second one is the maximum value.
+To use this plugin you need to use the `clamp()` function but with **only two arguments**, the first one is the minimum value and the second one is the maximum value.
 
 ### Clamp between smallest and largest breakpoint
 
