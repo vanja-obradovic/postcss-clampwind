@@ -60,7 +60,7 @@ This will use Tailwind default largest and smallest breakpoint.
 .text-\[clamp\(16px\,50px\)\] {
   @media (width >= 40rem) { /* 640px */
     @media (width < 96rem) { /* 1536px */
-      font-size: clamp(1rem, ... , 3.125rem);
+      font-size: clamp(1rem, calc(...) , 3.125rem);
     }
   }
 }
@@ -70,8 +70,18 @@ But clampwind also generates automatically the css values for any screen size ou
 
 ```css
 .text-\[clamp\(16px\,50px\)\] {
-  font-size: clamp(1rem, ... , 3.125rem);
-}
+    @media (width < 40rem) { /* 640px */
+      font-size: 1rem;
+    }
+    @media (width >= 40rem) { /* 640px */
+      @media (width < 96rem) { /* 1536px */
+        font-size: clamp(1rem, calc(...), 3.125rem);
+      }
+    }
+    @media (width >= 96rem) { /* 1536px */
+      font-size: 3.125rem;
+    }
+  }
 ```
 
 ### Clamp between two breakpoints
@@ -90,7 +100,7 @@ This will generate the following css:
 .md\:max-lg\:text-\[clamp\(16px\,50px\)\] {
   @media (width >= 48rem) { /* 768px */
     @media (width < 64rem) { /* 1024px */
-      font-size: clamp(1rem, ... , 3.125rem);
+      font-size: clamp(1rem, calc(...), 3.125rem);
     }
   }
 }
@@ -98,13 +108,40 @@ This will generate the following css:
 
 ### Clamp from one breakpoint
 
-If you want to define a clamp value from a single breakpoint, clampwind will automatically generate the css for the upper breakpoint, or the lower breakpoint if you use the `max-` modifier, for example:
+If you want to define a clamp value from a single breakpoint, clampwind will automatically generate the css for the largest breakpoint and above, or the smallest breakpoint and below if you use the `max-` modifier, for example:
 
 ```html
 <div class="md:text-[clamp(16px,50px)]"></div>
 ```
 
 This will generate the following css:
+
+```css
+.md\:text-\[clamp\(16px\,50px\)\] {
+    @media (width >= 48rem) {  /* 768px */
+      @media (width < 96rem) { /* 1536px */
+        font-size: clamp(1rem, calc(...), 3.125rem);
+      }
+    }
+    @media (width >= 96rem) {
+      font-size: 3.125rem;
+    }
+  }
+```
+Or if you use the `max-` modifier:
+
+```css
+.max-md\:text-\[clamp\(16px\,50px\)\] {
+    @media (width < 40rem) { /* 640px */
+      font-size: 1rem;
+    }
+    @media (width >= 40rem) { /* 640px */
+      @media (width < 48rem) { /* 768px */
+        font-size: clamp(1rem, calc(...), 3.125rem);
+      }
+    }
+  }
+```
 
 ### Add custom breakpoints
 
@@ -130,7 +167,7 @@ This will generate the following css:
 .min-\[1000px\]\:max-xl\:text-\[clamp\(16px\,50px\)\] {
   @media (width >= 1000px) { /* 1000px */
     @media (width < 64rem) { /* 1600px */
-      font-size: clamp(1rem, ... , 3.125rem);
+      font-size: clamp(1rem, calc(...), 3.125rem);
     }
   }
 }
@@ -150,7 +187,7 @@ The bare values size depends on the theme `--spacing` size, so if you have have 
 .text-\[clamp\(16\,50\)\] {
   @media (width >= 40rem) { /* 640px */
     @media (width < 96rem) { /* 1536px */
-      font-size: clamp(1rem, ... , 3.125rem);
+      font-size: clamp(1rem, calc(...), 3.125rem);
     }
   }
 }
@@ -167,6 +204,24 @@ or like this:
 
 ```html
 <div class="text-[clamp(var(--text-sm),50px)]"></div>
+```
+
+### Clamp container queries
+
+Clampwind supports container queries, just by using the normal Tailwind container query syntax, for example:
+
+```html
+<div class="@md:text-[clamp(16px,50px)]"></div>
+```
+
+This will generate the following css:
+
+```css
+.@md\:text-\[clamp\(16px\,50px\)\] {
+  @container (width >= 48rem) { /* 768px */
+    font-size: clamp(1rem, calc(...), 3.125rem);
+  }
+}
 ```
 
 ## Features
