@@ -26,9 +26,9 @@ export default {
 
 ```
 
-### Vite project
+### Vite project setup
 
-If you are using Vite, you are probably using tailwind with `@tailwindcss/vite`. 
+If you are using Vite, you are probably using Tailwind with `@tailwindcss/vite`. 
 
 Vite will automatically detect the `postcss.config.js` file and use the plugin, without the need to explicitly define it in `vite.config.js`. So you just need to have `postcss.config.js` in your root folder.
 
@@ -42,13 +42,37 @@ export default {
 
 ```
 
+## Features
+
+- **Interchangeable px / rem units**
+Allow clamped values to use either px or rem interchangeably.
+
+- **Tailwind size variable clamping**
+Enable clamping directly on Tailwind’s predefined size tokens (e.g. `--text-lg`).
+
+- **CSS custom property support**
+Permit use of CSS variables (--*) within clamped expressions.
+
+- **Container query compatibility**
+Automatically adapt clamped values based on container query breakpoints.
+
+- **Decreasing & negative ranges**
+Support clamped ranges that shrink or go below zero.
+
+- **Unitless clamping**
+If no unit is specified, default to your theme’s `--spacing` scale.
+
+- **Error reporting via CSS comments**
+Output validation errors as in‑CSS comments for easy debugging.
+
+
 ## Usage
 
 To use this plugin you need to use the `clamp()` function but only with **two arguments,** the first one is the minimum value and the second one is the maximum value.
 
 ### Clamp between smallest and largest breakpoint
 
-Write the tailwind utility you want to make fluid, without any breakpoint modifier, for example:
+Write the Tailwind utility you want to make fluid, without any breakpoint modifier, for example:
 
 ```html
 <div class="text-[clamp(16px,50px)]"></div>
@@ -143,16 +167,6 @@ Or if you use the `max-` modifier:
   }
 ```
 
-### Add custom breakpoints
-
-Tailwind v4 introduced the new configuration via CSS custom properties, but Tailwind by default, will not output in your CSS any custom properties that are not referenced in your CSS, to solve this issue you should use the `@theme static` directive instead of `@theme` to create custom breakpoints.
-
-```css
-@theme static {
-  --breakpoint-4xl: 1600px;
-}
-```
-
 ### Clamp between custom breakpoints
 
 With Tailwind v4 it's really easy to use one-time custom breakpoints, and this plugin will automatically detect them and use them to clamp the CSS property.
@@ -218,21 +232,65 @@ This will generate the following css:
 
 ```css
 .@md\:text-\[clamp\(16px\,50px\)\] {
-  @container (width >= 48rem) { /* 768px */
-    font-size: clamp(1rem, calc(...), 3.125rem);
+  @container (width >= 28rem) { /* 448px */
+    @container (width < 80rem) { /* 1280px */
+      font-size: clamp(1rem, calc(...), 3.125rem);
+    }
+  }
+  @container (width >= 80rem) { /* 1280px */
+    font-size: 3.125rem;
   }
 }
 ```
 
-## Features
+## Configuration
 
-- Use interchangeably px and rem values in the clamped values
-- Use Tailwind custom properties in the clamped values
-- Omit units, it will use the theme --spacing size
-- Support container queries
-- support decreasing and negative values ranges
-- Error messages outputted as css comments
+Tailwind v4 introduced the new CSS-based configuration and clampwind embraces it.
 
+### Add custom breakpoints
+
+To add new breakpoints in Tailwind v4 you normally define them inside the `@theme` directive.
+
+But Tailwind by default, will not output in your CSS any custom properties that are not referenced in your CSS, for this reason you should use the `@theme static` directive instead of `@theme` to create custom breakpoints.
+
+```css
+@theme static {
+  --breakpoint-4xl: 1600px;
+}
+```
+
+### Use custom properties
+
+You can use any custom properties in your clamped values, for example:
+
+```html
+<div class="text-[clamp(--custom-value,50px)]"></div>
+```
+
+You just need to make sure that the custom property is defined in your `:root` selector.
+
+```css
+:root {
+  --custom-value: 16px;
+}
+```
+
+### Pixel to rem conversion
+
+If you are using pixel values in your clamped values, clampwind will automatically convert them to rem. For the conversion it scans your generated css and if you have set pixel values for the root `font-size` or for your `--text-base` custom property in your `:root` selector, it will use that value to convert the pixel values to rem values. If you haven't set a font-size in your `:root` selector, it will use the default value of 16px.
+
+```css
+:root {
+  font-size: 18px; /* 18px = 1.125rem */
+}
+```
+or like this:
+
+```css
+:root {
+  --text-base: 18px; /* 18px = 1.125rem */
+}
+```
 
 ## License and Credits
 
