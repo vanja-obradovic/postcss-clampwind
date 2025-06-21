@@ -11,19 +11,17 @@ Install the plugin from npm:
 npm install -D clampwind
 ```
 
-Then add the plugin to your `tailwind.config.js` file:
+Then add the plugin to your `postcss.config.js` file:
 
 ```js
-// tailwind.config.js
-module.exports = {
-  theme: {
-    // ...
-  },
-  plugins: [
-    require('clampwind'),
-    // ...
-  ],
-}
+// postcss.config.js
+export default { 
+  plugins: { 
+    "@tailwindcss/postcss": {},
+    "clampwind": {}
+  } 
+};
+
 ```
 
 ## Usage
