@@ -54,17 +54,26 @@ Write the tailwind utility you want to make fluid, without any breakpoint modifi
 <div class="text-[clamp(16px,50px)]"></div>
 ```
 
-This will use Tailwind default largest and smallest breakpoint, or any other breakpoint you have defined, and generate the following css:
+This will use Tailwind default largest and smallest breakpoint.
 
 ```css
 .text-\[clamp\(16px\,50px\)\] {
   @media (width >= 40rem) { /* 640px */
     @media (width < 96rem) { /* 1536px */
-      font-size: clamp(16px, ... , 50px);
+      font-size: clamp(1rem, ... , 3.125rem);
     }
   }
 }
 ```
+
+But clampwind also generates automatically the css values for any screen size outside of the range of the smallest and largest breakpoints. The full generated css will be:
+
+```css
+.text-\[clamp\(16px\,50px\)\] {
+  font-size: clamp(1rem, ... , 3.125rem);
+}
+```
+
 ### Clamp between two breakpoints
 
 Simply add regular Tailwind breakpoint modifiers to the utility, for example:
@@ -81,11 +90,21 @@ This will generate the following css:
 .md\:max-lg\:text-\[clamp\(16px\,50px\)\] {
   @media (width >= 48rem) { /* 768px */
     @media (width < 64rem) { /* 1024px */
-      font-size: clamp(16px, ... , 50px);
+      font-size: clamp(1rem, ... , 3.125rem);
     }
   }
 }
 ```
+
+### Clamp from one breakpoint
+
+If you want to define a clamp value from a single breakpoint, clampwind will automatically generate the css for the upper breakpoint, or the lower breakpoint if you use the `max-` modifier, for example:
+
+```html
+<div class="md:text-[clamp(16px,50px)]"></div>
+```
+
+This will generate the following css:
 
 ### Add custom breakpoints
 
@@ -111,7 +130,7 @@ This will generate the following css:
 .min-\[1000px\]\:max-xl\:text-\[clamp\(16px\,50px\)\] {
   @media (width >= 1000px) { /* 1000px */
     @media (width < 64rem) { /* 1600px */
-      font-size: clamp(16px, ... , 50px);
+      font-size: clamp(1rem, ... , 3.125rem);
     }
   }
 }
@@ -131,7 +150,7 @@ The bare values size depends on the theme `--spacing` size, so if you have have 
 .text-\[clamp\(16\,50\)\] {
   @media (width >= 40rem) { /* 640px */
     @media (width < 96rem) { /* 1536px */
-      font-size: clamp(16px, ... , 50px);
+      font-size: clamp(1rem, ... , 3.125rem);
     }
   }
 }
