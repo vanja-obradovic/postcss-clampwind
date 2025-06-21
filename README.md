@@ -132,7 +132,6 @@ Eg. `text-[clamp(16px,50px)]` should generate `@media (width < 40rem) { ... } @m
 - ~~output a comment in the generated CSS if there are errors (clamped values have mismatched units, not allowed units, etc..)~~
 - ~~Clean up the code and make transformations more readable~~
 - ~~add error messages for invalid values as css comments~~
-- check why `leading-[clamp(16px,50px)]` is not working
 - Check if the pxToRem plugin does conversions before the plugin runs
 - Check if it works well with vite
 - ~~support decreasing values for breakpoints where minValue is greater than maxValue~~

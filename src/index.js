@@ -246,6 +246,8 @@ const clampwind = (opts = {}) => {
           // MARK: - - Single MQ
           // Single media queries: generate from the defined media query breakpoint to the upper or lower bound depending on the direction
           singleMediaQueries.forEach(({ mediaNode, declNodes }) => {
+            const newMediaQueries = [];
+            
             declNodes.forEach(decl => {
 
               const args = extractTwoValidClampArgs(decl.value);
@@ -284,7 +286,7 @@ const clampwind = (opts = {}) => {
 
                 const lowerMQ = postcss.atRule({ name: 'media', params: `(width < ${minScreen})` });
                 lowerMQ.append(postcss.decl({ prop: decl.prop, value: lower }));
-                mediaNode.parent.insertBefore(mediaNode, lowerMQ);
+                newMediaQueries.push(lowerMQ);
 
                 const innerMQ = postcss.atRule({ name: 'media', params: mediaNode.params });
                 const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize)
@@ -292,18 +294,24 @@ const clampwind = (opts = {}) => {
 
                 const outerMQ = postcss.atRule({ name: 'media', params: `(width >= ${minScreen})` });
                 outerMQ.append(innerMQ);
-
-                mediaNode.replaceWith(outerMQ);
+                newMediaQueries.push(outerMQ);
 
                 decl.remove();
 
               }
             });
+                 
+            newMediaQueries.forEach(mq => {
+              mediaNode.parent.insertBefore(mediaNode, mq);
+            });
+            mediaNode.remove();
           });
 
           // MARK: - - Single CQ
           // Single container queries: generate from the defined container query breakpoint to the upper or lower bound depending on the direction
           singleContainerQueries.forEach(({ mediaNode, declNodes }) => {
+            const newContainerQueries = [];
+            
             declNodes.forEach(decl => {
 
               const args = extractTwoValidClampArgs(decl.value);
@@ -342,7 +350,7 @@ const clampwind = (opts = {}) => {
 
                 const lowerCQ = postcss.atRule({ name: 'container', params: `(width < ${minContainer})` });
                 lowerCQ.append(postcss.decl({ prop: decl.prop, value: lower }));
-                mediaNode.parent.insertBefore(mediaNode, lowerCQ);
+                newContainerQueries.push(lowerCQ);
 
                 const innerCQ = postcss.atRule({ name: 'container', params: mediaNode.params });
                 const clamp = generateClamp(lower, upper, minContainer, maxContainer, rootFontSize, spacingSize, true)
@@ -350,13 +358,17 @@ const clampwind = (opts = {}) => {
 
                 const outerCQ = postcss.atRule({ name: 'container', params: `(width >= ${minContainer})` });
                 outerCQ.append(innerCQ);
-
-                mediaNode.replaceWith(outerCQ);
+                newContainerQueries.push(outerCQ);
 
                 decl.remove();
 
               }
             });
+            
+            newContainerQueries.forEach(cq => {
+              mediaNode.parent.insertBefore(mediaNode, cq);
+            });
+            mediaNode.remove();
           });
 
           // MARK: - - Double MQ
