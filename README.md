@@ -114,31 +114,19 @@ or like this:
 <div class="text-[clamp(var(--text-sm),50px)]"></div>
 ```
 
+## Features
+
+- Use interchangeably px and rem values in the clamped values
+- Use Tailwind custom properties in the clamped values
+- Omit units, it will use the theme --spacing size
+- Support container queries
+- support decreasing and negative values ranges
+- Error messages outputted as css comments
 
 
 ## TODO
-
-- ~~Merge and order custom breakpoints with Tailwind default ones~~
-- ~~Ability to convert px to rem in custom breakpoints~~
-- ~~Check for atRules where there is only one media query~~
-- ~~Check for atRules where there are no media queries~~
-- ~~Create media queries ranges from the smallest to the largest breakpoint for clamp rules with one or zero media queries ranges~~
-- ~~I need to also add external ranges for these cases, if there are no breakpoints or only one breakpoint, the plugin should add the external range to the generated CSS. 
-Eg. `text-[clamp(16px,50px)]` should generate `@media (width < 40rem) { ... } @media (width >= 96rem) { ... }`~~
-- ~~If --spacing is set to px and clamped values have no unit, do the conversion in js by reading the --spacing value and divide it by the root font size~~
-- ~~if --spacing is set to rem, and clamped values have no unit, add `var(--spacing) * value` to the clamped values~~
-- ~~if clamped value has a unit different than px? No conversion?~~
-- ~~read all the custom properties values from the theme, store them in a map and use them whenever they are referenced in the clamped values, and convert them to rem if needed~~
-- ~~output a comment in the generated CSS if there are errors (clamped values have mismatched units, not allowed units, etc..)~~
-- ~~Clean up the code and make transformations more readable~~
-- ~~add error messages for invalid values as css comments~~
 - Check if the pxToRem plugin does conversions before the plugin runs
 - Check if it works well with vite
-- ~~support decreasing values for breakpoints where minValue is greater than maxValue~~
-- ~~support negative values~~
-- ~~Check how it works with mixing breakpoints, eg. `md:max-lg:` and `max-lg:md:` are both valid~~
-- ~~support container queries~~
-
 
 ## License and Credits
 
