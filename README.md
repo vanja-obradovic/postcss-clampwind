@@ -14,10 +14,16 @@ This will generate the following CSS:
 
 ```css
 .text-\[clamp\(16px\,50px\)\] {
-  @media (width >= 40rem) { /* 640px */
-    @media (width < 96rem) { /* 1536px */
-      font-size: clamp(1rem, calc(...) , 3.125rem);
+  @media (width < 40rem) { /* < 640px */
+    font-size: 1rem;
+  }
+  @media (width >= 40rem) { /* >= 640px */
+    @media (width < 96rem) { /* < 1536px */
+      font-size: clamp(1rem, calc(1rem + 0.0379 * (100vw - 40rem)), 3.125rem);
     }
+  }
+  @media (width >= 96rem) { /* >= 1536px */
+    font-size: 3.125rem;
   }
 }
 ```
@@ -193,6 +199,8 @@ This will generate the following css:
 }
 ```
 
+> If you explicitly set a range of breakpoints, clampwind will not generate the outer breakpoints.
+
 ### Clamp from one breakpoint
 
 If you want to define a clamp value from a single breakpoint, clampwind will automatically generate the css for the largest breakpoint and above, or the smallest breakpoint and below if you use the `max-` modifier, for example:
@@ -250,9 +258,9 @@ This will generate the following css:
 }
 ```
 
-### Clamp between Tailwind scale values
+### Clamp between Tailwind spacing scale values
 
-A quick way to define two clamped values is to use the Tailwind scale values, for example:
+A quick way to define two clamped values is to use the Tailwind spacing scale values, for example:
 
 ```html
 <div class="text-[clamp(16,50)]"></div>
