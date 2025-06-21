@@ -1,7 +1,7 @@
 {
-  "name": "tailwindcss-fluid-variants",
+  "name": "clampwind",
   "version": "0.0.1",
-  "description": "A plugin for Tailwind CSS to create fluid variants",
+  "description": "A plugin for Tailwind CSS to create fluid clamp values for any Tailwind CSS utility",
   "main": "src/index.js",
   "type": "module",
   "files": [
@@ -10,7 +10,7 @@
   "scripts": {
   },
   "license": "MIT",
-  "repository": "https://github.com/danieledep/tailwindcss-fluid-variants",
+  "repository": "https://github.com/danieledep/clampwind",
   "publishConfig": {
     "access": "public"
   },
@@ -23,7 +23,9 @@
   },
   "keywords": [
     "tailwindcss",
+    "clamp",
     "fluid",
-    "variants"
+    "variants",
+    "responsive"
   ]
 }
