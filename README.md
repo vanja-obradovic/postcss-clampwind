@@ -11,7 +11,9 @@ Install the plugin from npm:
 npm install -D clampwind
 ```
 
-Then add the plugin to your `postcss.config.js` file:
+### PostCSS setup
+
+Add the plugin to your `postcss.config.js` file:
 
 ```js
 // postcss.config.js
@@ -24,9 +26,25 @@ export default {
 
 ```
 
+### Vite project
+
+If you are using Vite, you are probably using tailwind with `@tailwindcss/vite`. 
+
+Vite will automatically detect the `postcss.config.js` file and use the plugin, without the need to explicitly define it in `vite.config.js`. So you just need to have `postcss.config.js` in your root folder.
+
+```js
+// postcss.config.js
+export default { 
+  plugins: { 
+    "clampwind": {}
+  } 
+};
+
+```
+
 ## Usage
 
-To use this plugin you need to use the `clamp()` function but only with two arguments, the first one is the minimum value and the second one is the maximum value.
+To use this plugin you need to use the `clamp()` function but only with **two arguments,** the first one is the minimum value and the second one is the maximum value.
 
 ### Clamp between smallest and largest breakpoint
 
@@ -71,7 +89,7 @@ This will generate the following css:
 
 ### Add custom breakpoints
 
-Tailwind v4 introduced the new configuration via CSS custom properties, but Tailwind will not output in your CSS any custom properties that's not referenced in your CSS, to solve this issue you should use the `@theme static` directive to create custom breakpoints.
+Tailwind v4 introduced the new configuration via CSS custom properties, but Tailwind by default, will not output in your CSS any custom properties that are not referenced in your CSS, to solve this issue you should use the `@theme static` directive instead of `@theme` to create custom breakpoints.
 
 ```css
 @theme static {
@@ -79,7 +97,7 @@ Tailwind v4 introduced the new configuration via CSS custom properties, but Tail
 }
 ```
 
-### Clamp between custom values
+### Clamp between custom breakpoints
 
 With Tailwind v4 it's really easy to use one-time custom breakpoints, and this plugin will automatically detect them and use them to clamp the CSS property.
 
@@ -99,7 +117,27 @@ This will generate the following css:
 }
 ```
 
-### Clamp between custom properties
+### Clamp between Tailwind scale values
+
+A quick way to define two clamped values is to use the Tailwind scale values, for example:
+
+```html
+<div class="text-[clamp(16,50)]"></div>
+```
+
+The bare values size depends on the theme `--spacing` size, so if you have have it set to `1px` it will generate the following css:
+
+```css
+.text-\[clamp\(16\,50\)\] {
+  @media (width >= 40rem) { /* 640px */
+    @media (width < 96rem) { /* 1536px */
+      font-size: clamp(16px, ... , 50px);
+    }
+  }
+}
+```
+
+### Clamp custom properties values
 
 You can also use custom properties in your clamped values, for example like this:
 
@@ -124,7 +162,6 @@ or like this:
 
 ## TODO
 - Check if the pxToRem plugin does conversions before the plugin runs
-- Check if it works well with vite
 
 ## License and Credits
 
