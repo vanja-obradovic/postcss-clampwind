@@ -234,9 +234,6 @@ This will generate the following css:
 - Error messages outputted as css comments
 
 
-## TODO
-- Check if the pxToRem plugin does conversions before the plugin runs
-
 ## License and Credits
 
 This project is licensed under the [Apache-2.0 license](https://apache.org/licenses/LICENSE-2.0).
