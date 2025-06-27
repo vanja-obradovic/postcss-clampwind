@@ -28,6 +28,11 @@ This will generate the following CSS:
 }
 ```
 
+The supplied values are used to generate the expression inside the `clamp()` function where the slope and bounds of the fluid transformation are calculated using Tailwind's smallest and largest breakpoints. 
+
+The plugin will also generate the css for any screen size outside of the range of the smallest and largest breakpoints.
+
+
 ## Installation
 
 Install the plugin from npm:
@@ -97,7 +102,7 @@ If no unit is specified, default to your theme’s `--spacing` scale.
 Clamp using Tailwind’s predefined size tokens.
 
 ```html
-<div class="text-[clamp(--text-sm,50px)]"></div>
+<div class="text-[clamp(var(--text-sm),50px)]"></div>
 ```
 
 ### Use CSS custom properties
@@ -105,7 +110,7 @@ Clamp using Tailwind’s predefined size tokens.
 Clamp using CSS custom properties.
 
 ```html
-<div class="text-[clamp(--custom-value,50px)]"></div>
+<div class="text-[clamp(var(--custom-value),50px)]"></div>
 ```
 
 ### Container query support
@@ -116,7 +121,7 @@ Clamp values based on container query breakpoints.
 <div class="@md:text-[clamp(16px,50px)]"></div>
 ```
 
-### Decreasing & negative ranges
+### Decreasing and negative ranges
 
 Support clamped ranges that shrink or go below zero.
 
@@ -283,13 +288,23 @@ The bare values size depends on the theme `--spacing` size, so if you have have 
 You can also use custom properties in your clamped values, for example like this:
 
 ```html
-<div class="text-[clamp(--text-sm,50px)]"></div>
+<div class="text-[clamp(var(--text-sm),50px)]"></div>
 ```
 or like this:
 
 ```html
-<div class="text-[clamp(var(--text-sm),50px)]"></div>
+<div class="text-[clamp(--text-sm,--text-lg)]"></div>
 ```
+
+But this won't work when using two custom properties directly in the CSS with `@apply`, so you need to use the `var()` function instead.
+
+```css
+.h2 {
+  @apply text-[clamp(var(--text-sm),var(--text-lg))];
+}
+```
+
+
 
 ### Clamp container queries
 
