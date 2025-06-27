@@ -1,6 +1,6 @@
 # clampwind
 
-A PostCSS plugin that transforms any two‑argument `clamp()` call into a fully fluid value, seamlessly integrating with Tailwind CSS utilities.
+A PostCSS plugin that transforms any two‑argument `clamp()` call into a fully fluid value, seamlessly integrating with Tailwind CSS utilities. Made for Tailwind v4.
 
 ## How it works
 
@@ -84,7 +84,7 @@ Allow clamped values to use either px or rem interchangeably.
 
 ### Use Tailwind breakpoint modifiers
 
-Clamp values within a specific range by using Tailwind breakpoint modifiers.
+Use the native Tailwind syntax to clamp values within a specific range by using breakpoint modifiers.
 
 ```html
 <div class="md:max-lg:text-[clamp(16px,50px)]"></div>
