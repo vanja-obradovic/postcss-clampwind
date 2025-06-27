@@ -28,7 +28,7 @@ This will generate the following CSS:
 }
 ```
 
-The supplied values are used to generate the expression inside the `clamp()` function where the slope and bounds of the fluid transformation are calculated using Tailwind's smallest and largest breakpoints. 
+The supplied values are used to generate the expression inside the `clamp()` function, where the slope and bounds of the fluid transformation are calculated using Tailwind's smallest and largest breakpoints. 
 
 The plugin will also generate the css for any screen size outside of the range of the smallest and largest breakpoints.
 
