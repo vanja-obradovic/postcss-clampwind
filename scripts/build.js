@@ -7,6 +7,7 @@ async function buildAll() {
 		build('esm', {
 			entryPoints: ['src/clampwind.js'],
 			platform: 'node',
+			format: 'esm',
 			mainFields: ['module', 'main'],
 		}),
 		build('cjs', {
