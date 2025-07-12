@@ -1,6 +1,6 @@
 import postcss from 'postcss';
 import { defaultScreens, defaultContainerScreens, formatBreakpointsRegexMatches, formatContainerBreakpointsRegexMatches, convertSortScreens } from './screens.js';
-import { extractTwoValidClampArgs, convertToRem, generateClamp } from './clamp.js';
+import { extractTwoValidClampArgs, convertToRem, generateClamp } from './utils.js';
 
 const clampwind = (opts = {}) => {
   let rootFontSize = 16;
