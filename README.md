@@ -41,7 +41,20 @@ export default {
     "clampwind": {}
   } 
 };
+```
 
+#### CommonJS usage
+
+If you are using CommonJS-based build tools like Webpack, you will need to use the `require` syntax and add `.default` to the import.
+
+```js
+// postcss.config.js
+module.exports = { 
+  plugins: { 
+    require("@tailwindcss/postcss"),
+    require('clampwind').default
+  } 
+};
 ```
 
 ### Vite project setup
@@ -57,7 +70,6 @@ export default {
     "clampwind": {}
   } 
 };
-
 ```
 
 ## Features
