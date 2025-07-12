@@ -9,12 +9,14 @@ async function buildAll() {
 			platform: 'node',
 			format: 'esm',
 			mainFields: ['module', 'main'],
+			external: ['postcss'],
 		}),
 		build('cjs', {
 			entryPoints: ['src/clampwind.js'],
 			target: ['node20.16'],
 			platform: 'node',
 			format: 'cjs',
+			external: ['postcss'],
 		}),
 	])
 }
