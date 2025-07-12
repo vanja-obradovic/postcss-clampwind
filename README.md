@@ -35,12 +35,15 @@ Add the plugin to your `postcss.config.js` file:
 
 ```js
 // postcss.config.js
-export default { 
-  plugins: { 
-    "@tailwindcss/postcss": {},
-    "clampwind": {}
-  } 
-};
+import tailwindcss from "@tailwindcss/postcss"
+import clampwind from "clampwind"
+
+export default {
+  plugins: [
+    tailwindcss(),
+    clampwind(),
+  ]
+}
 ```
 
 #### CommonJS usage
@@ -59,17 +62,17 @@ module.exports = {
 
 ### Vite project setup
 
-If you are using Vite, you are probably using Tailwind with `@tailwindcss/vite`. 
-
-Vite will automatically detect the `postcss.config.js` file and use the plugin, without the need to explicitly define it in `vite.config.js`. So you just need to have `postcss.config.js` in your root folder.
+If you are using Vite, you are probably using Tailwind with `@tailwindcss/vite`. You need to import the plugin and use it in your `postcss.config.js` file.
 
 ```js
 // postcss.config.js
+import clampwind from 'clampwind';
+
 export default { 
-  plugins: { 
-    "clampwind": {}
-  } 
-};
+  plugins: [ 
+    clampwind()
+  ] 
+}; 
 ```
 
 ## Features
