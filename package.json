@@ -1,6 +1,6 @@
 {
   "name": "clampwind",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "A PostCSS plugin to create fluid clamp values for any Tailwind CSS utility",
   "main": "src/index.js",
   "type": "module",
@@ -15,11 +15,7 @@
     "access": "public"
   },
   "devDependencies": {
-    "postcss": "^8.4.39",
-    "tailwindcss": "^3.4.6"
-  },
-  "peerDependencies": {
-    "tailwindcss": ">=3.4.6"
+    "postcss": "^8.4.39"
   },
   "keywords": [
     "tailwindcss",
