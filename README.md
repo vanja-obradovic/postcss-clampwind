@@ -14,23 +14,11 @@ This will generate the following CSS:
 
 ```css
 .text-\[clamp\(16px\,50px\)\] {
-  @media (width < 40rem) { /* < 640px */
-    font-size: 1rem;
-  }
-  @media (width >= 40rem) { /* >= 640px */
-    @media (width < 96rem) { /* < 1536px */
-      font-size: clamp(1rem, calc(1rem + 0.0379 * (100vw - 40rem)), 3.125rem);
-    }
-  }
-  @media (width >= 96rem) { /* >= 1536px */
-    font-size: 3.125rem;
-  }
+  font-size: clamp(1rem, calc(1rem + 0.0379 * (100vw - 40rem)), 3.125rem);
 }
 ```
 
-The supplied values are used to generate the expression inside the `clamp()` function, where the slope and bounds of the fluid transformation are calculated using Tailwind's smallest and largest breakpoints. 
-
-The plugin will also generate the css for any screen size outside of the range of the smallest and largest breakpoints.
+The supplied values are used to generate the expression inside the `clamp()` function, where the fluid transformation is calculated using Tailwind's smallest and largest breakpoints.
 
 
 ## Installation
@@ -156,30 +144,8 @@ This will use Tailwind default largest and smallest breakpoint.
 
 ```css
 .text-\[clamp\(16px\,50px\)\] {
-  @media (width >= 40rem) { /* 640px */
-    @media (width < 96rem) { /* 1536px */
-      font-size: clamp(1rem, calc(...) , 3.125rem);
-    }
-  }
+  font-size: clamp(1rem, calc(...) , 3.125rem);
 }
-```
-
-But clampwind also generates automatically the css values for any screen size outside of the range of the smallest and largest breakpoints. The full generated css will be:
-
-```css
-.text-\[clamp\(16px\,50px\)\] {
-    @media (width < 40rem) { /* 640px */
-      font-size: 1rem;
-    }
-    @media (width >= 40rem) { /* 640px */
-      @media (width < 96rem) { /* 1536px */
-        font-size: clamp(1rem, calc(...), 3.125rem);
-      }
-    }
-    @media (width >= 96rem) { /* 1536px */
-      font-size: 3.125rem;
-    }
-  }
 ```
 
 ### Clamp between two breakpoints
@@ -196,19 +162,17 @@ This will generate the following css:
 
 ```css
 .md\:max-lg\:text-\[clamp\(16px\,50px\)\] {
-  @media (width >= 48rem) { /* 768px */
-    @media (width < 64rem) { /* 1024px */
+  @media (width >= 48rem) { /* >= 768px */
+    @media (width < 64rem) { /* < 1024px */
       font-size: clamp(1rem, calc(...), 3.125rem);
     }
   }
 }
 ```
 
-> If you explicitly set a range of breakpoints, clampwind will not generate the outer breakpoints.
-
 ### Clamp from one breakpoint
 
-If you want to define a clamp value from a single breakpoint, clampwind will automatically generate the css for the largest breakpoint and above, or the smallest breakpoint and below if you use the `max-` modifier, for example:
+If you want to define a clamp value from a single breakpoint, clampwind will automatically generate the calculation from the defined breakpoint to the smallest or largest breakpoint depending on the direction, for example:
 
 ```html
 <div class="md:text-[clamp(16px,50px)]"></div>
@@ -218,13 +182,8 @@ This will generate the following css:
 
 ```css
 .md\:text-\[clamp\(16px\,50px\)\] {
-    @media (width >= 48rem) {  /* 768px */
-      @media (width < 96rem) { /* 1536px */
-        font-size: clamp(1rem, calc(...), 3.125rem);
-      }
-    }
-    @media (width >= 96rem) {
-      font-size: 3.125rem;
+    @media (width >= 48rem) {  /* >= 768px */
+      font-size: clamp(1rem, calc(...), 3.125rem);
     }
   }
 ```
@@ -232,13 +191,8 @@ Or if you use the `max-` modifier:
 
 ```css
 .max-md\:text-\[clamp\(16px\,50px\)\] {
-    @media (width < 40rem) { /* 640px */
-      font-size: 1rem;
-    }
-    @media (width >= 40rem) { /* 640px */
-      @media (width < 48rem) { /* 768px */
-        font-size: clamp(1rem, calc(...), 3.125rem);
-      }
+    @media (width < 48rem) { /* < 768px */
+      font-size: clamp(1rem, calc(...), 3.125rem);
     }
   }
 ```
@@ -255,8 +209,8 @@ This will generate the following css:
 
 ```css
 .min-\[1000px\]\:max-xl\:text-\[clamp\(16px\,50px\)\] {
-  @media (width >= 1000px) { /* 1000px */
-    @media (width < 64rem) { /* 1600px */
+  @media (width >= 1000px) { /* >= 1000px */
+    @media (width < 64rem) { /* < 1600px */
       font-size: clamp(1rem, calc(...), 3.125rem);
     }
   }
@@ -275,11 +229,7 @@ The bare values size depends on the theme `--spacing` size, so if you have have 
 
 ```css
 .text-\[clamp\(16\,50\)\] {
-  @media (width >= 40rem) { /* 640px */
-    @media (width < 96rem) { /* 1536px */
-      font-size: clamp(1rem, calc(...), 3.125rem);
-    }
-  }
+  font-size: clamp(1rem, calc(...), 3.125rem);
 }
 ```
 
@@ -318,13 +268,8 @@ This will generate the following css:
 
 ```css
 .@md\:text-\[clamp\(16px\,50px\)\] {
-  @container (width >= 28rem) { /* 448px */
-    @container (width < 80rem) { /* 1280px */
-      font-size: clamp(1rem, calc(...), 3.125rem);
-    }
-  }
-  @container (width >= 80rem) { /* 1280px */
-    font-size: 3.125rem;
+  @container (width >= 28rem) { /* >= 448px */
+    font-size: clamp(1rem, calc(...), 3.125rem);
   }
 }
 ```
