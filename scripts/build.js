@@ -19,7 +19,7 @@ async function buildAll() {
 }
 
 async function build(name, options) {
-	const path = `clampwind.${name}.js`
+	const path = `clampwind.${name}.${name === 'cjs' ? 'cjs' : 'js'}`
 	console.log(`Building ${name}`)
 
 	if (process.argv.includes('--watch')) {

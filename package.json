@@ -1,6 +1,6 @@
 {
   "name": "clampwind",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A PostCSS plugin to create fluid clamp values for any Tailwind CSS utility",
   "license": "Apache-2.0",
     "keywords": [
@@ -23,7 +23,7 @@
   },
   "main": "./dist/clampwind.esm.js",
   "exports": {
-    "require": "./dist/clampwind.cjs.js",
+    "require": "./dist/clampwind.cjs.cjs",
     "import": "./dist/clampwind.esm.js",
     "default": "./dist/clampwind.esm.js"
   },
