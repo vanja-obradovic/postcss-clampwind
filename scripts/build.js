@@ -13,6 +13,7 @@ async function buildAll() {
 			entryPoints: ['src/clampwind.js'],
 			target: ['node20.16'],
 			platform: 'node',
+			format: 'cjs',
 		}),
 	])
 }
