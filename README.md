@@ -34,7 +34,7 @@ npm install -D clampwind
 Add the plugin to your `postcss.config.js` file:
 
 ```js
-// postcss.config.js
+// postcss.config.mjs
 import tailwindcss from "@tailwindcss/postcss"
 import clampwind from "clampwind"
 
