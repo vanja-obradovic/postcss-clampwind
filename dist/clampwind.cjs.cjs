@@ -134,7 +134,14 @@ var convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) => 
   const formattedProperty = formatProperty(value);
   const fallbackValue = value.includes("var(") && value.includes(",") ? value.replace(/var\([^,]+,\s*([^)]+)\)/, "$1") : null;
   if (!unit) {
-    return `${value * spacingSize}rem`;
+    const spacingSizeInt = parseFloat(spacingSize);
+    const spacingUnit = extractUnit(spacingSize);
+    if (spacingUnit === "px") {
+      return `${value * spacingSizeInt / rootFontSize}rem`;
+    }
+    if (spacingUnit === "rem") {
+      return `${value * spacingSizeInt}rem`;
+    }
   }
   if (unit === "px") {
     return `${value.replace("px", "") / rootFontSize}rem`;
@@ -159,7 +166,7 @@ var convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) => 
   }
   return null;
 };
-var generateClamp = (lower, upper, minScreen, maxScreen, rootFontSize = 16, spacingSize = 0.25, containerQuery = false) => {
+var generateClamp = (lower, upper, minScreen, maxScreen, rootFontSize = 16, spacingSize = "1px", containerQuery = false) => {
   const maxScreenInt = parseFloat(
     convertToRem(maxScreen, rootFontSize, spacingSize)
   );
@@ -180,96 +187,111 @@ var generateClamp = (lower, upper, minScreen, maxScreen, rootFontSize = 16, spac
 // src/clampwind.js
 var clampwind = (opts = {}) => {
   let rootFontSize = 16;
-  let spacingSize = 0.25;
+  let spacingSize = "1px";
   let customProperties = {};
   let screens = defaultScreens || {};
   let containerScreens = defaultContainerScreens || {};
-  let defaultLayerBreakpoints = {};
-  let defaultLayerContainerBreakpoints = {};
-  let themeLayerBreakpoints = {};
-  let themeLayerContainerBreakpoints = {};
-  let rootElementBreakpoints = {};
-  let rootElementContainerBreakpoints = {};
-  const noMediaQueries = [];
-  const singleMediaQueries = [];
-  const singleContainerQueries = [];
-  const doubleNestedMediaQueries = [];
-  const doubleNestedContainerQueries = [];
+  const config = {
+    defaultLayerBreakpoints: {},
+    defaultLayerContainerBreakpoints: {},
+    themeLayerBreakpoints: {},
+    themeLayerContainerBreakpoints: {},
+    rootElementBreakpoints: {},
+    rootElementContainerBreakpoints: {},
+    configReady: false
+  };
+  const finalizeConfig = () => {
+    if (config.configReady) return;
+    screens = Object.assign(
+      {},
+      screens,
+      config.defaultLayerBreakpoints,
+      config.rootElementBreakpoints,
+      config.themeLayerBreakpoints
+    );
+    screens = convertSortScreens(screens, rootFontSize);
+    containerScreens = Object.assign(
+      {},
+      containerScreens,
+      config.defaultLayerContainerBreakpoints,
+      config.rootElementContainerBreakpoints,
+      config.themeLayerContainerBreakpoints
+    );
+    containerScreens = convertSortScreens(containerScreens, rootFontSize);
+    config.configReady = true;
+  };
+  const processClampDeclaration = (decl, minScreen, maxScreen, isContainer = false) => {
+    const args = extractTwoValidClampArgs(decl.value);
+    const [lower, upper] = args.map((val) => convertToRem(val, rootFontSize, spacingSize, customProperties));
+    if (!args || !lower || !upper) {
+      console.warn("Invalid clamp() values", { node: decl });
+      decl.value = ` ${decl.value} /* Invalid clamp() values */`;
+      return false;
+    }
+    const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize, isContainer);
+    decl.value = clamp;
+    return true;
+  };
   return {
     postcssPlugin: "clampwind",
     prepare() {
       return {
-        // MARK: Rule
-        Rule(rule) {
-          if (rule.selector === ":root") {
-            rule.walkDecls((decl) => {
-              if (decl.prop.startsWith("--breakpoint-")) {
-                const key = decl.prop.replace("--breakpoint-", "");
-                rootElementBreakpoints[key] = decl.value;
-              }
-              if (decl.prop.startsWith("--container-")) {
-                const key = decl.prop.replace("--container-", "@");
-                rootElementContainerBreakpoints[key] = decl.value;
-              }
-              if (decl.prop === "--text-base" && decl.value.includes("px")) {
-                rootFontSize = parseFloat(decl.value);
-              }
-              if (decl.prop === "font-size" && decl.value.includes("px")) {
-                rootFontSize = parseFloat(decl.value);
-              }
-              if (decl.prop === "--spacing") {
-                spacingSize = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
-              }
-              if (decl.prop.startsWith("--")) {
-                const value = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
-                if (value) customProperties[decl.prop] = value;
-              }
-            });
-            return;
-          }
-          const declNodes = [];
-          for (const node of rule.nodes || []) {
-            if (node.type === "decl" && extractTwoValidClampArgs(node.value)) {
-              declNodes.push(node);
+        // MARK: Declaration - Collect configuration
+        Declaration(decl) {
+          if (decl.parent?.selector === ":root") {
+            if (decl.prop.startsWith("--breakpoint-")) {
+              const key = decl.prop.replace("--breakpoint-", "");
+              config.rootElementBreakpoints[key] = decl.value;
             }
-          }
-          const hasMediaChild = (rule.nodes || []).some(
-            (n) => n.type === "atrule" && n.name === "media"
-          );
-          if (declNodes.length && !hasMediaChild) {
-            noMediaQueries.push({ ruleNode: rule, declNodes });
+            if (decl.prop.startsWith("--container-")) {
+              const key = decl.prop.replace("--container-", "@");
+              config.rootElementContainerBreakpoints[key] = decl.value;
+            }
+            if (decl.prop === "--text-base" && decl.value.includes("px")) {
+              rootFontSize = parseFloat(decl.value);
+            }
+            if (decl.prop === "font-size" && decl.value.includes("px")) {
+              rootFontSize = parseFloat(decl.value);
+            }
+            if (decl.prop === "--spacing") {
+              spacingSize = decl.value;
+            }
+            if (decl.prop.startsWith("--")) {
+              const value = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
+              if (value) customProperties[decl.prop] = value;
+            }
           }
         },
         // MARK: AtRule
         AtRule: {
           // MARK: - - Layers
-          // Collect theme variables from layers
+          // Collect configuration
           layer(atRule) {
-            if (atRule.params === "default" && !Object.keys(defaultLayerBreakpoints).length) {
+            if (atRule.params === "default" && !Object.keys(config.defaultLayerBreakpoints).length) {
               const css = atRule.source.input.css;
               const matches = css.match(/--breakpoint-[^:]+:\s*[^;]+/g) || [];
-              defaultLayerBreakpoints = formatBreakpointsRegexMatches(matches);
+              config.defaultLayerBreakpoints = formatBreakpointsRegexMatches(matches);
             }
-            if (atRule.params === "default" && !Object.keys(defaultLayerContainerBreakpoints).length) {
+            if (atRule.params === "default" && !Object.keys(config.defaultLayerContainerBreakpoints).length) {
               const css = atRule.source.input.css;
               const matches = css.match(/--container-[^:]+:\s*[^;]+/g) || [];
-              defaultLayerContainerBreakpoints = formatContainerBreakpointsRegexMatches(matches);
+              config.defaultLayerContainerBreakpoints = formatContainerBreakpointsRegexMatches(matches);
             }
             if (atRule.params === "theme") {
               atRule.walkDecls((decl) => {
                 if (decl.prop.startsWith("--breakpoint-")) {
                   const key = decl.prop.replace("--breakpoint-", "");
-                  themeLayerBreakpoints[key] = decl.value;
+                  config.themeLayerBreakpoints[key] = decl.value;
                 }
                 if (decl.prop.startsWith("--container-")) {
                   const key = decl.prop.replace("--container-", "@");
-                  themeLayerContainerBreakpoints[key] = decl.value;
+                  config.themeLayerContainerBreakpoints[key] = decl.value;
                 }
                 if (decl.prop === "--text-base" && decl.value.includes("px")) {
                   rootFontSize = parseFloat(decl.value);
                 }
                 if (decl.prop === "--spacing") {
-                  spacingSize = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
+                  spacingSize = decl.value;
                 }
                 if (decl.prop.startsWith("--")) {
                   const value = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
@@ -279,185 +301,180 @@ var clampwind = (opts = {}) => {
             }
           },
           // MARK: - - Media
-          // Collect clamp() decls from single @media and nested @media
+          // Process immediately
           media(atRule) {
+            finalizeConfig();
             const isNested = atRule.parent?.type === "atrule";
             const isSameAtRule = atRule.parent?.name === atRule.name;
-            const declNodes = [];
-            for (const node of atRule.nodes || []) {
+            const clampDecls = [];
+            atRule.each((node) => {
               if (node.type === "decl" && extractTwoValidClampArgs(node.value)) {
-                declNodes.push(node);
+                clampDecls.push(node);
+              } else if (node.type === "rule") {
+                node.each((childNode) => {
+                  if (childNode.type === "decl" && extractTwoValidClampArgs(childNode.value)) {
+                    clampDecls.push(childNode);
+                  }
+                });
               }
-            }
-            if (!declNodes.length) return;
+            });
+            if (!clampDecls.length) return;
             if (isNested && isSameAtRule) {
-              doubleNestedMediaQueries.push({
-                parentNode: atRule.parent,
-                mediaNode: atRule,
-                declNodes
-              });
-            } else if (isNested && !isSameAtRule) {
-              declNodes.forEach((decl) => {
-                decl.value = ` ${decl.value} /* Invalid nested @media and @container rules */`;
-              });
-            } else {
-              singleMediaQueries.push({ mediaNode: atRule, declNodes });
+              const parentParams = atRule.parent.params;
+              const currentParams = atRule.params;
+              let minScreen = null;
+              let maxScreen = null;
+              if (parentParams.includes(">")) {
+                const match = parentParams.match(/>=?\s*([^)]+)/);
+                if (match) minScreen = match[1].trim();
+              }
+              if (currentParams.includes(">") && !minScreen) {
+                const match = currentParams.match(/>=?\s*([^)]+)/);
+                if (match) minScreen = match[1].trim();
+              }
+              if (parentParams.includes("<")) {
+                const match = parentParams.match(/<\s*([^)]+)/);
+                if (match) maxScreen = match[1].trim();
+              }
+              if (currentParams.includes("<") && !maxScreen) {
+                const match = currentParams.match(/<\s*([^)]+)/);
+                if (match) maxScreen = match[1].trim();
+              }
+              if (minScreen && maxScreen) {
+                clampDecls.forEach((decl) => {
+                  processClampDeclaration(decl, minScreen, maxScreen, false);
+                });
+              }
+              return;
             }
+            if (isNested && !isSameAtRule) {
+              clampDecls.forEach((decl) => {
+                decl.value = ` ${decl.value} /* Invalid nested @media rules */`;
+              });
+              return;
+            }
+            const screenValues = Object.values(screens);
+            clampDecls.forEach((decl) => {
+              if (atRule.params.includes(">")) {
+                const match = atRule.params.match(/>=?\s*([^)]+)/);
+                if (match) {
+                  const minScreen = match[1].trim();
+                  const maxScreen = screenValues[screenValues.length - 1];
+                  processClampDeclaration(decl, minScreen, maxScreen, false);
+                }
+              } else if (atRule.params.includes("<")) {
+                const match = atRule.params.match(/<\s*([^)]+)/);
+                if (match) {
+                  const minScreen = screenValues[0];
+                  const maxScreen = match[1].trim();
+                  processClampDeclaration(decl, minScreen, maxScreen, false);
+                }
+              }
+            });
           },
           // MARK: - - Container
-          // Collect clamp() decls from single @container and nested @container
+          // Process immediately
           container(atRule) {
+            finalizeConfig();
             const isNested = atRule.parent?.type === "atrule";
             const isSameAtRule = atRule.parent?.name === atRule.name;
-            const declNodes = [];
-            for (const node of atRule.nodes || []) {
+            const clampDecls = [];
+            atRule.each((node) => {
               if (node.type === "decl" && extractTwoValidClampArgs(node.value)) {
-                declNodes.push(node);
+                clampDecls.push(node);
+              } else if (node.type === "rule") {
+                node.each((childNode) => {
+                  if (childNode.type === "decl" && extractTwoValidClampArgs(childNode.value)) {
+                    clampDecls.push(childNode);
+                  }
+                });
               }
-            }
-            if (!declNodes.length) return;
+            });
+            if (!clampDecls.length) return;
             if (isNested && isSameAtRule) {
-              doubleNestedContainerQueries.push({
-                parentNode: atRule.parent,
-                mediaNode: atRule,
-                declNodes
-              });
-            } else if (isNested && !isSameAtRule) {
-              declNodes.forEach((decl) => {
-                decl.value = ` ${decl.value} /* Invalid nested @media and @container rules */`;
-              });
-            } else {
-              singleContainerQueries.push({ mediaNode: atRule, declNodes });
+              const parentParams = atRule.parent.params;
+              const currentParams = atRule.params;
+              let minContainer = null;
+              let maxContainer = null;
+              if (parentParams.includes(">")) {
+                const match = parentParams.match(/>=?\s*([^)]+)/);
+                if (match) minContainer = match[1].trim();
+              }
+              if (currentParams.includes(">") && !minContainer) {
+                const match = currentParams.match(/>=?\s*([^)]+)/);
+                if (match) minContainer = match[1].trim();
+              }
+              if (parentParams.includes("<")) {
+                const match = parentParams.match(/<\s*([^)]+)/);
+                if (match) maxContainer = match[1].trim();
+              }
+              if (currentParams.includes("<") && !maxContainer) {
+                const match = currentParams.match(/<\s*([^)]+)/);
+                if (match) maxContainer = match[1].trim();
+              }
+              if (minContainer && maxContainer) {
+                clampDecls.forEach((decl) => {
+                  processClampDeclaration(decl, minContainer, maxContainer, true);
+                });
+              }
+              return;
             }
+            if (isNested && !isSameAtRule) {
+              clampDecls.forEach((decl) => {
+                decl.value = ` ${decl.value} /* Invalid nested @container rules */`;
+              });
+              return;
+            }
+            const screenValues = Object.values(containerScreens);
+            const containerNameMatches = atRule.params.match(/^([^\s(]+)\s*\(/);
+            const containerName = containerNameMatches ? containerNameMatches[1].trim() : "";
+            clampDecls.forEach((decl) => {
+              if (atRule.params.includes(">")) {
+                const match = atRule.params.match(/>=?\s*([^)]+)/);
+                if (match) {
+                  const minContainer = match[1].trim();
+                  const maxContainer = screenValues[screenValues.length - 1];
+                  processClampDeclaration(decl, minContainer, maxContainer, true);
+                }
+              } else if (atRule.params.includes("<")) {
+                const match = atRule.params.match(/<\s*([^)]+)/);
+                if (match) {
+                  const minContainer = screenValues[0];
+                  const maxContainer = match[1].trim();
+                  processClampDeclaration(decl, minContainer, maxContainer, true);
+                }
+              }
+            });
           }
         },
-        // MARK: OnceExit
-        OnceExit() {
-          screens = Object.assign(
-            {},
-            screens,
-            defaultLayerBreakpoints,
-            rootElementBreakpoints,
-            themeLayerBreakpoints
+        // MARK: Rule
+        // Process no-media rules immediately
+        Rule(rule) {
+          finalizeConfig();
+          const hasMediaChild = (rule.nodes || []).some(
+            (n) => n.type === "atrule" && (n.name === "media" || n.name === "container")
           );
-          screens = convertSortScreens(screens, rootFontSize);
-          containerScreens = Object.assign(
-            {},
-            containerScreens,
-            defaultLayerContainerBreakpoints,
-            rootElementContainerBreakpoints,
-            themeLayerContainerBreakpoints
-          );
-          containerScreens = convertSortScreens(containerScreens, rootFontSize);
-          noMediaQueries.forEach(({ ruleNode, declNodes }) => {
-            declNodes.forEach((decl) => {
-              const args = extractTwoValidClampArgs(decl.value);
-              const [lower, upper] = args.map((val) => convertToRem(val, rootFontSize, spacingSize, customProperties));
-              if (!args || !lower || !upper) {
-                decl.value = ` ${decl.value} /* Invalid clamp() values */`;
-                return;
-              }
-              const screenValues = Object.values(screens);
-              const minScreen = screenValues[0];
-              const maxScreen = screenValues[screenValues.length - 1];
-              const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize);
-              ruleNode.append(import_postcss.default.decl({ prop: decl.prop, value: clamp }));
+          if (hasMediaChild) return;
+          const clampDecls = [];
+          rule.walkDecls((decl) => {
+            if (extractTwoValidClampArgs(decl.value)) {
+              clampDecls.push(decl);
+            }
+          });
+          if (clampDecls.length === 0) return;
+          const screenValues = Object.values(screens);
+          const minScreen = screenValues[0];
+          const maxScreen = screenValues[screenValues.length - 1];
+          clampDecls.forEach((decl) => {
+            const newDecl = import_postcss.default.decl({
+              prop: decl.prop,
+              value: decl.value,
+              source: decl.source
+            });
+            if (processClampDeclaration(newDecl, minScreen, maxScreen, false)) {
+              rule.insertAfter(decl, newDecl);
               decl.remove();
-            });
-          });
-          singleMediaQueries.forEach(({ mediaNode, declNodes }) => {
-            const newMediaQueries = [];
-            declNodes.forEach((decl) => {
-              const args = extractTwoValidClampArgs(decl.value);
-              const [lower, upper] = args.map((val) => convertToRem(val, rootFontSize, spacingSize, customProperties));
-              if (!args || !lower || !upper) {
-                decl.value = ` ${decl.value} /* Invalid clamp() values */`;
-                return;
-              }
-              const screenValues = Object.values(screens);
-              if (mediaNode.params.includes(">")) {
-                const minScreen = mediaNode.params.match(/>=?([^)]+)/)[1].trim();
-                const maxScreen = screenValues[screenValues.length - 1];
-                const singleMQ = import_postcss.default.atRule({ name: "media", params: `(width >= ${minScreen})` });
-                const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize);
-                singleMQ.append(import_postcss.default.decl({ prop: decl.prop, value: clamp }));
-                newMediaQueries.push(singleMQ);
-                decl.remove();
-              } else if (mediaNode.params.includes("<")) {
-                const minScreen = screenValues[0];
-                const maxScreen = mediaNode.params.match(/<([^)]+)/)[1].trim();
-                const singleMQ = import_postcss.default.atRule({ name: "media", params: mediaNode.params });
-                const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize);
-                singleMQ.append(import_postcss.default.decl({ prop: decl.prop, value: clamp }));
-                newMediaQueries.push(singleMQ);
-                decl.remove();
-              }
-            });
-            newMediaQueries.forEach((mq) => {
-              mediaNode.parent.insertBefore(mediaNode, mq);
-            });
-            mediaNode.remove();
-          });
-          singleContainerQueries.forEach(({ mediaNode, declNodes }) => {
-            const newContainerQueries = [];
-            declNodes.forEach((decl) => {
-              const args = extractTwoValidClampArgs(decl.value);
-              const [lower, upper] = args.map((val) => convertToRem(val, rootFontSize, spacingSize, customProperties));
-              if (!args || !lower || !upper) {
-                decl.value = ` ${decl.value} /* Invalid clamp() values */`;
-                return;
-              }
-              const screenValues = Object.values(containerScreens);
-              const containerNameMatches = mediaNode.params.match(/^([^\s(]+)\s*\(/);
-              const containerName = containerNameMatches ? containerNameMatches[1].trim() : "";
-              if (mediaNode.params.includes(">")) {
-                const minContainer = mediaNode.params.match(/>=?([^)]+)/)[1].trim();
-                const maxContainer = screenValues[screenValues.length - 1];
-                const singleCQ = import_postcss.default.atRule({ name: "container", params: `${containerName} (width >= ${minContainer})` });
-                const clamp = generateClamp(lower, upper, minContainer, maxContainer, rootFontSize, spacingSize, true);
-                singleCQ.append(import_postcss.default.decl({ prop: decl.prop, value: clamp }));
-                newContainerQueries.push(singleCQ);
-                decl.remove();
-              } else if (mediaNode.params.includes("<")) {
-                const minContainer = screenValues[0];
-                const maxContainer = mediaNode.params.match(/<([^)]+)/)[1].trim();
-                const singleCQ = import_postcss.default.atRule({ name: "container", params: `${containerName} ${mediaNode.params}` });
-                const clamp = generateClamp(lower, upper, minContainer, maxContainer, rootFontSize, spacingSize, true);
-                singleCQ.append(import_postcss.default.decl({ prop: decl.prop, value: clamp }));
-                newContainerQueries.push(singleCQ);
-                decl.remove();
-              }
-            });
-            newContainerQueries.forEach((cq) => {
-              mediaNode.parent.insertBefore(mediaNode, cq);
-            });
-            mediaNode.remove();
-          });
-          doubleNestedMediaQueries.forEach(({ parentNode, mediaNode, declNodes }) => {
-            declNodes.forEach((decl) => {
-              const maxScreen = [parentNode.params, mediaNode.params].filter((p) => p.includes("<")).map((p) => p.match(/<([^)]+)/)[1].trim())[0];
-              const minScreen = [parentNode.params, mediaNode.params].filter((p) => p.includes(">")).map((p) => p.match(/>=?([^)]+)/)[1].trim())[0];
-              const args = extractTwoValidClampArgs(decl.value);
-              const [lower, upper] = args.map((val) => convertToRem(val, rootFontSize, spacingSize, customProperties));
-              if (!args || !lower || !upper) {
-                decl.value = ` ${decl.value} /* Invalid clamp() values */`;
-                return;
-              }
-              decl.value = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize, false);
-            });
-          });
-          doubleNestedContainerQueries.forEach(({ parentNode, mediaNode, declNodes }) => {
-            declNodes.forEach((decl) => {
-              const maxContainer = [parentNode.params, mediaNode.params].filter((p) => p.includes("<")).map((p) => p.match(/<([^)]+)/)[1].trim())[0];
-              const minContainer = [parentNode.params, mediaNode.params].filter((p) => p.includes(">")).map((p) => p.match(/>=?([^)]+)/)[1].trim())[0];
-              const args = extractTwoValidClampArgs(decl.value);
-              const [lower, upper] = args.map((val) => convertToRem(val, rootFontSize, spacingSize, customProperties));
-              if (!args || !lower || !upper) {
-                decl.value = ` ${decl.value} /* Invalid clamp() values */`;
-                return;
-              }
-              decl.value = generateClamp(lower, upper, minContainer, maxContainer, rootFontSize, spacingSize, true);
-            });
+            }
           });
         }
       };
