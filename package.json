@@ -1,14 +1,15 @@
 {
   "name": "clampwind",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "A PostCSS plugin to create fluid clamp values for any Tailwind CSS utility",
   "license": "Apache-2.0",
     "keywords": [
+    "clampwind",
+    "postcss-plugin",
     "tailwindcss",
     "clamp",
     "fluid",
-    "variants",
-    "responsive"
+    "variants"
   ],
   "repository": {
     "type": "git",
@@ -31,8 +32,10 @@
     "dist"
   ],
   "devDependencies": {
-    "postcss": "^8.4.39",
     "esbuild": "^0.25.6"
+  },
+  "peerDependencies": {
+    "postcss": "^8.4.39"
   },
   "scripts": {
     "dev": "node scripts/build.js --watch",
