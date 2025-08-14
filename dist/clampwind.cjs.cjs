@@ -1,8 +1,6 @@
-var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -16,14 +14,6 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/clampwind.js
@@ -32,7 +22,6 @@ __export(clampwind_exports, {
   default: () => clampwind_default
 });
 module.exports = __toCommonJS(clampwind_exports);
-var import_postcss = __toESM(require("postcss"), 1);
 
 // src/screens.js
 var defaultScreens = {
@@ -176,7 +165,7 @@ var clampwind = (opts = {}) => {
     postcssPlugin: "clampwind",
     prepare() {
       let rootFontSize = 16;
-      let spacingSize = "1px";
+      let spacingSize = "0.25rem";
       let customProperties = {};
       let screens = defaultScreens || {};
       let containerScreens = defaultContainerScreens || {};

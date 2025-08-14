@@ -1,6 +1,3 @@
-// src/clampwind.js
-import postcss from "postcss";
-
 // src/screens.js
 var defaultScreens = {
   sm: "40rem",
@@ -143,7 +140,7 @@ var clampwind = (opts = {}) => {
     postcssPlugin: "clampwind",
     prepare() {
       let rootFontSize = 16;
-      let spacingSize = "1px";
+      let spacingSize = "0.25rem";
       let customProperties = {};
       let screens = defaultScreens || {};
       let containerScreens = defaultContainerScreens || {};
