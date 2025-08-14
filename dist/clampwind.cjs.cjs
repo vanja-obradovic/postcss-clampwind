@@ -226,7 +226,7 @@ var clampwind = (opts = {}) => {
     if (!args || !lower || !upper) {
       console.warn("Invalid clamp() values", { node: decl });
       decl.value = ` ${decl.value} /* Invalid clamp() values */`;
-      return false;
+      return true;
     }
     const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize, isContainer);
     decl.value = clamp;
@@ -236,31 +236,34 @@ var clampwind = (opts = {}) => {
     postcssPlugin: "clampwind",
     prepare() {
       return {
-        // MARK: Declaration - Collect configuration
-        Declaration(decl) {
-          if (decl.parent?.selector === ":root") {
-            if (decl.prop.startsWith("--breakpoint-")) {
-              const key = decl.prop.replace("--breakpoint-", "");
-              config.rootElementBreakpoints[key] = decl.value;
+        // MARK: Once 
+        // Collect configuration before any other rules are processed
+        Once(root) {
+          root.walkDecls((decl) => {
+            if (decl.parent?.selector === ":root") {
+              if (decl.prop.startsWith("--breakpoint-")) {
+                const key = decl.prop.replace("--breakpoint-", "");
+                config.rootElementBreakpoints[key] = decl.value;
+              }
+              if (decl.prop.startsWith("--container-")) {
+                const key = decl.prop.replace("--container-", "@");
+                config.rootElementContainerBreakpoints[key] = decl.value;
+              }
+              if (decl.prop === "--text-base" && decl.value.includes("px")) {
+                rootFontSize = parseFloat(decl.value);
+              }
+              if (decl.prop === "font-size" && decl.value.includes("px")) {
+                rootFontSize = parseFloat(decl.value);
+              }
+              if (decl.prop === "--spacing") {
+                spacingSize = decl.value;
+              }
+              if (decl.prop.startsWith("--")) {
+                const value = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
+                if (value) customProperties[decl.prop] = value;
+              }
             }
-            if (decl.prop.startsWith("--container-")) {
-              const key = decl.prop.replace("--container-", "@");
-              config.rootElementContainerBreakpoints[key] = decl.value;
-            }
-            if (decl.prop === "--text-base" && decl.value.includes("px")) {
-              rootFontSize = parseFloat(decl.value);
-            }
-            if (decl.prop === "font-size" && decl.value.includes("px")) {
-              rootFontSize = parseFloat(decl.value);
-            }
-            if (decl.prop === "--spacing") {
-              spacingSize = decl.value;
-            }
-            if (decl.prop.startsWith("--")) {
-              const value = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
-              if (value) customProperties[decl.prop] = value;
-            }
-          }
+          });
         },
         // MARK: AtRule
         AtRule: {
@@ -301,7 +304,6 @@ var clampwind = (opts = {}) => {
             }
           },
           // MARK: - - Media
-          // Process immediately
           media(atRule) {
             finalizeConfig();
             const isNested = atRule.parent?.type === "atrule";
@@ -448,7 +450,6 @@ var clampwind = (opts = {}) => {
           }
         },
         // MARK: Rule
-        // Process no-media rules immediately
         Rule(rule) {
           finalizeConfig();
           const hasMediaChild = (rule.nodes || []).some(
