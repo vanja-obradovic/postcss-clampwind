@@ -1,4 +1,4 @@
-# clampwind
+# postcss-clampwind
 
 A PostCSS plugin that transforms any two‑argument `clamp()` call into a fully fluid value, seamlessly integrating with Tailwind CSS utilities. Made for Tailwind v4.
 
@@ -26,7 +26,7 @@ The supplied values are used to generate the expression inside the `clamp()` fun
 Install the plugin from npm:
 
 ```sh
-npm install -D clampwind
+npm install -D postcss-clampwind
 ```
 
 ### PostCSS setup
@@ -36,7 +36,7 @@ Add the plugin to your `postcss.config.js` file:
 ```js
 // postcss.config.mjs
 import tailwindcss from "@tailwindcss/postcss"
-import clampwind from "clampwind"
+import clampwind from "postcss-clampwind"
 
 export default {
   plugins: [
@@ -55,7 +55,7 @@ If you are using CommonJS-based build tools like Webpack, you will need to use t
 module.exports = { 
   plugins: { 
     require("@tailwindcss/postcss"),
-    require('clampwind').default
+    require("postcss-clampwind").default
   } 
 };
 ```
@@ -66,7 +66,7 @@ If you are using Vite, you are probably using Tailwind with `@tailwindcss/vite`.
 
 ```js
 // postcss.config.js
-import clampwind from 'clampwind';
+import clampwind from "postcss-clampwind";
 
 export default { 
   plugins: [ 
@@ -187,7 +187,7 @@ This will generate the following css:
 
 ### Clamp from one breakpoint
 
-If you want to define a clamp value from a single breakpoint, clampwind will automatically generate the calculation from the defined breakpoint to the smallest or largest breakpoint depending on the direction, for example:
+If you want to define a clamp value from a single breakpoint, postcss-clampwind will automatically generate the calculation from the defined breakpoint to the smallest or largest breakpoint depending on the direction, for example:
 
 ```html
 <div class="md:text-[clamp(16px,50px)]"></div>
@@ -273,7 +273,7 @@ But this won't work when using two custom properties directly in the CSS with `@
 
 ### Clamp container queries
 
-Clampwind supports container queries, just by using the normal Tailwind container query syntax, for example:
+Postcss-clampwind supports container queries, just by using the normal Tailwind container query syntax, for example:
 
 ```html
 <div class="@md:text-[clamp(16px,50px)]"></div>
@@ -291,7 +291,7 @@ This will generate the following css:
 
 ## Configuration
 
-Tailwind v4 introduced the new CSS-based configuration and clampwind embraces it.
+Tailwind v4 introduced the new CSS-based configuration and postcss-clampwind embraces it.
 
 ### Add custom breakpoints
 
