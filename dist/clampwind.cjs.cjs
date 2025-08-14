@@ -123,14 +123,14 @@ var convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) => 
     const spacingSizeInt = parseFloat(spacingSize);
     const spacingUnit = extractUnit(spacingSize);
     if (spacingUnit === "px") {
-      return `${value * spacingSizeInt / rootFontSize}rem`;
+      return `${parseFloat(value * spacingSizeInt / rootFontSize).toFixed(4)}rem`;
     }
     if (spacingUnit === "rem") {
-      return `${value * spacingSizeInt}rem`;
+      return `${parseFloat(value * spacingSizeInt).toFixed(4)}rem`;
     }
   }
   if (unit === "px") {
-    return `${value.replace("px", "") / rootFontSize}rem`;
+    return `${parseFloat(value.replace("px", "") / rootFontSize).toFixed(4)}rem`;
   }
   if (unit === "rem") {
     return value;
@@ -141,10 +141,10 @@ var convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) => 
   if (formattedProperty && !customProperties[formattedProperty] && fallbackValue) {
     const fallbackUnit = extractUnit(fallbackValue);
     if (!fallbackUnit) {
-      return `${fallbackValue * spacingSize}rem`;
+      return `${parseFloat(fallbackValue * spacingSize).toFixed(4)}rem`;
     }
     if (fallbackUnit === "px") {
-      return `${fallbackValue.replace("px", "") / rootFontSize}rem`;
+      return `${parseFloat(fallbackValue.replace("px", "") / rootFontSize).toFixed(4)}rem`;
     }
     if (fallbackUnit === "rem") {
       return fallbackValue;
