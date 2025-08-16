@@ -305,6 +305,33 @@ But Tailwind by default, will not output in your CSS any custom properties that 
 }
 ```
 
+### Set a default clamp range
+
+You can set a default clamp range to use when no breakpoint modifier is used, like this:
+
+```html
+<div class="text-[clamp(16px,50px)]"></div>
+```
+
+To set a default clamp range you need to use the `--breakpoint-clamp-min` and `--breakpoint-clamp-max` custom properties, defined inside the `@theme static` directive.
+
+```css
+@theme static {
+  --breakpoint-clamp-min: 600px;
+  --breakpoint-clamp-max: 1200px;
+}
+```
+
+This will also apply for utilities that use only one breakpoint modifier. In this example the `md` breakpoint will be used as the minimum breakpoint, and `--breakpoint-clamp-max` will be used as the maximum breakpoint:
+
+```html
+<div class="md:text-[clamp(16px,50px)]"></div>
+```
+
+The default clamp range will let you to simplify your utilities, since usually you don't need to clamp between the smallest and largest Tailwind breakpoints, but only between two breakpoints. 
+
+You will still be able to clamp between any other Tailwind or custom breakpoints, even if out of the default clamp range.
+
 ### Use custom properties
 
 You can use any custom properties in your clamped values, for example:

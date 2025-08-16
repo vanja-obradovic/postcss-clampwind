@@ -39,28 +39,13 @@ var defaultContainerScreens = {
   "@7xl": "80rem"
   // 1280px
 };
-var convertSortScreens = (screens, rootFontSize = 16) => {
-  const convertedScreens = Object.entries(screens).reduce((acc, [key, value]) => {
-    if (value.includes("px")) {
-      const pxValue = parseFloat(value);
-      acc[key] = `${pxValue / rootFontSize}rem`;
-    } else {
-      acc[key] = value;
-    }
-    return acc;
-  }, {});
-  const sortedKeys = Object.keys(convertedScreens).sort((a, b) => {
-    const aValue = parseFloat(convertedScreens[a]);
-    const bValue = parseFloat(convertedScreens[b]);
-    return aValue - bValue;
-  });
-  return sortedKeys.reduce((acc, key) => {
-    acc[key] = convertedScreens[key];
-    return acc;
-  }, {});
-};
 
 // src/utils.js
+var smartRound = (value, maxDecimals = 4) => {
+  const precise = value.toFixed(maxDecimals);
+  const trimmed = precise.replace(/\.?0+$/, "");
+  return trimmed || "0";
+};
 var extractTwoValidClampArgs = (value) => {
   const m = value.match(/\bclamp\s*\(\s*(var\([^()]+\)|[^,()]+)\s*,\s*(var\([^()]+\)|[^,()]+)\s*\)$/);
   return m ? [m[1].trim(), m[2].trim()] : null;
@@ -87,28 +72,28 @@ var convertToRem = (value, rootFontSize, spacingSize, customProperties = {}) => 
     const spacingSizeInt = parseFloat(spacingSize);
     const spacingUnit = extractUnit(spacingSize);
     if (spacingUnit === "px") {
-      return `${parseFloat(value * spacingSizeInt / rootFontSize).toFixed(4)}rem`;
+      return `${smartRound(value * spacingSizeInt / rootFontSize)}rem`;
     }
     if (spacingUnit === "rem") {
-      return `${parseFloat(value * spacingSizeInt).toFixed(4)}rem`;
+      return `${smartRound(value * spacingSizeInt)}rem`;
     }
   }
   if (unit === "px") {
-    return `${parseFloat(value.replace("px", "") / rootFontSize).toFixed(4)}rem`;
+    return `${smartRound(value.replace("px", "") / rootFontSize)}rem`;
   }
   if (unit === "rem") {
     return value;
   }
   if (customProperties[formattedProperty]) {
-    return `${customProperties[formattedProperty]}rem`;
+    return customProperties[formattedProperty];
   }
   if (formattedProperty && !customProperties[formattedProperty] && fallbackValue) {
     const fallbackUnit = extractUnit(fallbackValue);
     if (!fallbackUnit) {
-      return `${parseFloat(fallbackValue * spacingSize).toFixed(4)}rem`;
+      return `${smartRound(fallbackValue * spacingSize)}rem`;
     }
     if (fallbackUnit === "px") {
-      return `${parseFloat(fallbackValue.replace("px", "") / rootFontSize).toFixed(4)}rem`;
+      return `${smartRound(fallbackValue.replace("px", "") / rootFontSize)}rem`;
     }
     if (fallbackUnit === "rem") {
       return fallbackValue;
@@ -129,9 +114,20 @@ var generateClamp = (lower, upper, minScreen, maxScreen, rootFontSize = 16, spac
   const min = isDescending ? upper : lower;
   const max = isDescending ? lower : upper;
   const widthUnit = containerQuery ? `100cqw` : `100vw`;
-  const slopeInt = parseFloat(((upperInt - lowerInt) / (maxScreenInt - minScreenInt)).toFixed(4));
+  const slopeInt = smartRound((upperInt - lowerInt) / (maxScreenInt - minScreenInt));
   const clamp = `clamp(${min}, calc(${lower} + ${slopeInt} * (${widthUnit} - ${minScreen})), ${max})`;
   return clamp;
+};
+var sortScreens = (screens) => {
+  const sortedKeys = Object.keys(screens).sort((a, b) => {
+    const aValue = parseFloat(screens[a]);
+    const bValue = parseFloat(screens[b]);
+    return aValue - bValue;
+  });
+  return sortedKeys.reduce((acc, key) => {
+    acc[key] = screens[key];
+    return acc;
+  }, {});
 };
 
 // src/clampwind.js
@@ -144,9 +140,8 @@ var clampwind = (opts = {}) => {
       let customProperties = {};
       let screens = defaultScreens || {};
       let containerScreens = defaultContainerScreens || {};
+      let defaultClampRange = {};
       const config = {
-        defaultLayerBreakpoints: {},
-        defaultLayerContainerBreakpoints: {},
         themeLayerBreakpoints: {},
         themeLayerContainerBreakpoints: {},
         rootElementBreakpoints: {},
@@ -170,17 +165,48 @@ var clampwind = (opts = {}) => {
           if (decl.parent?.selector === ":root") {
             if (decl.prop.startsWith("--breakpoint-")) {
               const key = decl.prop.replace("--breakpoint-", "");
-              config.rootElementBreakpoints[key] = decl.value;
+              config.rootElementBreakpoints[key] = convertToRem(
+                decl.value,
+                rootFontSize,
+                spacingSize,
+                customProperties
+              );
             }
             if (decl.prop.startsWith("--container-")) {
               const key = decl.prop.replace("--container-", "@");
-              config.rootElementContainerBreakpoints[key] = decl.value;
+              config.rootElementContainerBreakpoints[key] = convertToRem(
+                decl.value,
+                rootFontSize,
+                spacingSize,
+                customProperties
+              );
+            }
+            if (decl.prop === "--breakpoint-clamp-min") {
+              defaultClampRange.min = convertToRem(
+                decl.value,
+                rootFontSize,
+                spacingSize,
+                customProperties
+              );
+            }
+            if (decl.prop === "--breakpoint-clamp-max") {
+              defaultClampRange.max = convertToRem(
+                decl.value,
+                rootFontSize,
+                spacingSize,
+                customProperties
+              );
             }
             if (decl.prop === "--spacing") {
               spacingSize = decl.value;
             }
             if (decl.prop.startsWith("--")) {
-              const value = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
+              const value = convertToRem(
+                decl.value,
+                rootFontSize,
+                spacingSize,
+                customProperties
+              );
               if (value) customProperties[decl.prop] = value;
             }
           }
@@ -195,35 +221,52 @@ var clampwind = (opts = {}) => {
           }
         });
         root.walkAtRules("layer", (atRule) => {
-          if (atRule.params === "default") {
-            if (!Object.keys(config.defaultLayerBreakpoints).length) {
-              atRule.walkDecls((decl) => {
-                if (decl.prop.startsWith("--breakpoint-")) {
-                  const key = decl.prop.replace("--breakpoint-", "");
-                  config.defaultLayerBreakpoints[key] = decl.value;
-                }
-                if (decl.prop.startsWith("--container-")) {
-                  const key = decl.prop.replace("--container-", "@");
-                  config.defaultLayerContainerBreakpoints[key] = decl.value;
-                }
-              });
-            }
-          }
           if (atRule.params === "theme") {
             atRule.walkDecls((decl) => {
               if (decl.prop.startsWith("--breakpoint-")) {
                 const key = decl.prop.replace("--breakpoint-", "");
-                config.themeLayerBreakpoints[key] = decl.value;
+                config.themeLayerBreakpoints[key] = convertToRem(
+                  decl.value,
+                  rootFontSize,
+                  spacingSize,
+                  customProperties
+                );
               }
               if (decl.prop.startsWith("--container-")) {
                 const key = decl.prop.replace("--container-", "@");
-                config.themeLayerContainerBreakpoints[key] = decl.value;
+                config.themeLayerContainerBreakpoints[key] = convertToRem(
+                  decl.value,
+                  rootFontSize,
+                  spacingSize,
+                  customProperties
+                );
+              }
+              if (decl.prop === "--breakpoint-clamp-min") {
+                defaultClampRange.min = convertToRem(
+                  decl.value,
+                  rootFontSize,
+                  spacingSize,
+                  customProperties
+                );
+              }
+              if (decl.prop === "--breakpoint-clamp-max") {
+                defaultClampRange.max = convertToRem(
+                  decl.value,
+                  rootFontSize,
+                  spacingSize,
+                  customProperties
+                );
               }
               if (decl.prop === "--spacing") {
                 spacingSize = decl.value;
               }
               if (decl.prop.startsWith("--")) {
-                const value = parseFloat(convertToRem(decl.value, rootFontSize, spacingSize, customProperties));
+                const value = convertToRem(
+                  decl.value,
+                  rootFontSize,
+                  spacingSize,
+                  customProperties
+                );
                 if (value) customProperties[decl.prop] = value;
               }
             });
@@ -236,30 +279,38 @@ var clampwind = (opts = {}) => {
         screens = Object.assign(
           {},
           screens,
-          config.defaultLayerBreakpoints,
           config.rootElementBreakpoints,
           config.themeLayerBreakpoints
         );
-        screens = convertSortScreens(screens, rootFontSize);
+        screens = sortScreens(screens);
         containerScreens = Object.assign(
           {},
           containerScreens,
-          config.defaultLayerContainerBreakpoints,
           config.rootElementContainerBreakpoints,
           config.themeLayerContainerBreakpoints
         );
-        containerScreens = convertSortScreens(containerScreens, rootFontSize);
+        containerScreens = sortScreens(containerScreens);
         config.configReady = true;
       };
       const processClampDeclaration = (decl, minScreen, maxScreen, isContainer = false) => {
         const args = extractTwoValidClampArgs(decl.value);
-        const [lower, upper] = args.map((val) => convertToRem(val, rootFontSize, spacingSize, customProperties));
+        const [lower, upper] = args.map(
+          (val) => convertToRem(val, rootFontSize, spacingSize, customProperties)
+        );
         if (!args || !lower || !upper) {
           console.warn("Invalid clamp() values", { node: decl });
           decl.value = ` ${decl.value} /* Invalid clamp() values */`;
           return true;
         }
-        const clamp = generateClamp(lower, upper, minScreen, maxScreen, rootFontSize, spacingSize, isContainer);
+        const clamp = generateClamp(
+          lower,
+          upper,
+          minScreen,
+          maxScreen,
+          rootFontSize,
+          spacingSize,
+          isContainer
+        );
         decl.value = clamp;
         return true;
       };
@@ -269,8 +320,6 @@ var clampwind = (opts = {}) => {
           collectConfig(root);
           finalizeConfig();
           root.walkAtRules("media", (atRule) => {
-            const isNested = atRule.parent?.type === "atrule";
-            const isSameAtRule = atRule.parent?.name === atRule.name;
             const clampDecls = [];
             atRule.walkDecls((decl) => {
               if (extractTwoValidClampArgs(decl.value)) {
@@ -278,53 +327,56 @@ var clampwind = (opts = {}) => {
               }
             });
             if (!clampDecls.length) return;
-            if (isNested && isSameAtRule) {
-              const parentParams = atRule.parent.params;
-              const currentParams = atRule.params;
-              let minScreen = null;
-              let maxScreen = null;
-              if (parentParams.includes(">")) {
-                const match = parentParams.match(/>=?\s*([^)]+)/);
-                if (match) minScreen = match[1].trim();
-              }
-              if (currentParams.includes(">") && !minScreen) {
-                const match = currentParams.match(/>=?\s*([^)]+)/);
-                if (match) minScreen = match[1].trim();
-              }
-              if (parentParams.includes("<")) {
-                const match = parentParams.match(/<\s*([^)]+)/);
-                if (match) maxScreen = match[1].trim();
-              }
-              if (currentParams.includes("<") && !maxScreen) {
-                const match = currentParams.match(/<\s*([^)]+)/);
-                if (match) maxScreen = match[1].trim();
-              }
-              if (minScreen && maxScreen) {
-                clampDecls.forEach((decl) => {
-                  processClampDeclaration(decl, minScreen, maxScreen, false);
-                });
-              }
-              return;
-            }
-            if (isNested && !isSameAtRule) {
-              clampDecls.forEach((decl) => {
-                decl.value = ` ${decl.value} /* Invalid nested @media rules */`;
-              });
-              return;
-            }
-            const screenValues = Object.values(screens);
             clampDecls.forEach((decl) => {
-              if (atRule.params.includes(">")) {
-                const match = atRule.params.match(/>=?\s*([^)]+)/);
+              const isNested = decl.parent?.type === "atrule" && decl.parent?.parent.type === "atrule";
+              const isSameAtRule = decl.parent?.name === decl.parent?.parent.name;
+              if (isNested && isSameAtRule) {
+                const currentParams2 = decl.parent.params;
+                const parentParams = decl.parent.parent.params;
+                let minScreen = null;
+                let maxScreen = null;
+                if (parentParams.includes(">")) {
+                  const match = parentParams.match(/>=?\s*([^)]+)/);
+                  if (match) minScreen = match[1].trim();
+                }
+                if (currentParams2.includes(">") && !minScreen) {
+                  const match = currentParams2.match(/>=?\s*([^)]+)/);
+                  if (match) minScreen = match[1].trim();
+                }
+                if (parentParams.includes("<")) {
+                  const match = parentParams.match(/<\s*([^)]+)/);
+                  if (match) maxScreen = match[1].trim();
+                }
+                if (currentParams2.includes("<") && !maxScreen) {
+                  const match = currentParams2.match(/<\s*([^)]+)/);
+                  if (match) maxScreen = match[1].trim();
+                }
+                if (minScreen && maxScreen) {
+                  clampDecls.forEach((decl2) => {
+                    processClampDeclaration(decl2, minScreen, maxScreen, false);
+                  });
+                }
+                return;
+              }
+              if (isNested && !isSameAtRule) {
+                clampDecls.forEach((decl2) => {
+                  decl2.value = ` ${decl2.value} /* Invalid nested @media rules */`;
+                });
+                return;
+              }
+              const screenValues = Object.values(screens);
+              const currentParams = decl.parent.params;
+              if (currentParams.includes(">")) {
+                const match = currentParams.match(/>=?\s*([^)]+)/);
                 if (match) {
                   const minScreen = match[1].trim();
-                  const maxScreen = screenValues[screenValues.length - 1];
+                  const maxScreen = defaultClampRange.max || screenValues[screenValues.length - 1];
                   processClampDeclaration(decl, minScreen, maxScreen, false);
                 }
-              } else if (atRule.params.includes("<")) {
-                const match = atRule.params.match(/<\s*([^)]+)/);
+              } else if (currentParams.includes("<")) {
+                const match = currentParams.match(/<\s*([^)]+)/);
                 if (match) {
-                  const minScreen = screenValues[0];
+                  const minScreen = defaultClampRange.min || screenValues[0];
                   const maxScreen = match[1].trim();
                   processClampDeclaration(decl, minScreen, maxScreen, false);
                 }
@@ -332,8 +384,6 @@ var clampwind = (opts = {}) => {
             });
           });
           root.walkAtRules("container", (atRule) => {
-            const isNested = atRule.parent?.type === "atrule";
-            const isSameAtRule = atRule.parent?.name === atRule.name;
             const clampDecls = [];
             atRule.walkDecls((decl) => {
               if (extractTwoValidClampArgs(decl.value)) {
@@ -341,55 +391,73 @@ var clampwind = (opts = {}) => {
               }
             });
             if (!clampDecls.length) return;
-            if (isNested && isSameAtRule) {
-              const parentParams = atRule.parent.params;
-              const currentParams = atRule.params;
-              let minContainer = null;
-              let maxContainer = null;
-              if (parentParams.includes(">")) {
-                const match = parentParams.match(/>=?\s*([^)]+)/);
-                if (match) minContainer = match[1].trim();
-              }
-              if (currentParams.includes(">") && !minContainer) {
-                const match = currentParams.match(/>=?\s*([^)]+)/);
-                if (match) minContainer = match[1].trim();
-              }
-              if (parentParams.includes("<")) {
-                const match = parentParams.match(/<\s*([^)]+)/);
-                if (match) maxContainer = match[1].trim();
-              }
-              if (currentParams.includes("<") && !maxContainer) {
-                const match = currentParams.match(/<\s*([^)]+)/);
-                if (match) maxContainer = match[1].trim();
-              }
-              if (minContainer && maxContainer) {
-                clampDecls.forEach((decl) => {
-                  processClampDeclaration(decl, minContainer, maxContainer, true);
-                });
-              }
-              return;
-            }
-            if (isNested && !isSameAtRule) {
-              clampDecls.forEach((decl) => {
-                decl.value = ` ${decl.value} /* Invalid nested @container rules */`;
-              });
-              return;
-            }
-            const screenValues = Object.values(containerScreens);
             clampDecls.forEach((decl) => {
-              if (atRule.params.includes(">")) {
-                const match = atRule.params.match(/>=?\s*([^)]+)/);
+              const isNested = decl.parent?.type === "atrule" && decl.parent?.parent.type === "atrule";
+              const isSameAtRule = decl.parent?.name === decl.parent?.parent.name;
+              if (isNested && isSameAtRule) {
+                const currentParams2 = decl.parent.params;
+                const parentParams = decl.parent.parent.params;
+                let minContainer = null;
+                let maxContainer = null;
+                if (parentParams.includes(">")) {
+                  const match = parentParams.match(/>=?\s*([^)]+)/);
+                  if (match) minContainer = match[1].trim();
+                }
+                if (currentParams2.includes(">") && !minContainer) {
+                  const match = currentParams2.match(/>=?\s*([^)]+)/);
+                  if (match) minContainer = match[1].trim();
+                }
+                if (parentParams.includes("<")) {
+                  const match = parentParams.match(/<\s*([^)]+)/);
+                  if (match) maxContainer = match[1].trim();
+                }
+                if (currentParams2.includes("<") && !maxContainer) {
+                  const match = currentParams2.match(/<\s*([^)]+)/);
+                  if (match) maxContainer = match[1].trim();
+                }
+                if (minContainer && maxContainer) {
+                  clampDecls.forEach((decl2) => {
+                    processClampDeclaration(
+                      decl2,
+                      minContainer,
+                      maxContainer,
+                      true
+                    );
+                  });
+                }
+                return;
+              }
+              if (isNested && !isSameAtRule) {
+                clampDecls.forEach((decl2) => {
+                  decl2.value = ` ${decl2.value} /* Invalid nested @container rules */`;
+                });
+                return;
+              }
+              const containerValues = Object.values(containerScreens);
+              const currentParams = decl.parent.params;
+              if (currentParams.includes(">")) {
+                const match = currentParams.match(/>=?\s*([^)]+)/);
                 if (match) {
                   const minContainer = match[1].trim();
-                  const maxContainer = screenValues[screenValues.length - 1];
-                  processClampDeclaration(decl, minContainer, maxContainer, true);
+                  const maxContainer = containerValues[containerValues.length - 1];
+                  processClampDeclaration(
+                    decl,
+                    minContainer,
+                    maxContainer,
+                    true
+                  );
                 }
-              } else if (atRule.params.includes("<")) {
-                const match = atRule.params.match(/<\s*([^)]+)/);
+              } else if (currentParams.includes("<")) {
+                const match = currentParams.match(/<\s*([^)]+)/);
                 if (match) {
-                  const minContainer = screenValues[0];
+                  const minContainer = containerValues[0];
                   const maxContainer = match[1].trim();
-                  processClampDeclaration(decl, minContainer, maxContainer, true);
+                  processClampDeclaration(
+                    decl,
+                    minContainer,
+                    maxContainer,
+                    true
+                  );
                 }
               }
             });
@@ -410,8 +478,8 @@ var clampwind = (opts = {}) => {
             });
             if (clampDecls.length === 0) return;
             const screenValues = Object.values(screens);
-            const minScreen = screenValues[0];
-            const maxScreen = screenValues[screenValues.length - 1];
+            const minScreen = defaultClampRange.min || screenValues[0];
+            const maxScreen = defaultClampRange.max || screenValues[screenValues.length - 1];
             clampDecls.forEach((decl) => {
               processClampDeclaration(decl, minScreen, maxScreen, false);
             });
