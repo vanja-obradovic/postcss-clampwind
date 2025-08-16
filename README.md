@@ -28,6 +28,21 @@ Install the plugin from npm:
 ```sh
 npm install -D postcss-clampwind
 ```
+### Vite project setup
+
+If you are using Vite, you are probably using Tailwind with `@tailwindcss/vite`. You need to import the plugin and use it in your `postcss.config.js` file.
+
+```js
+// postcss.config.js
+import clampwind from "postcss-clampwind";
+
+export default { 
+  plugins: [ 
+    clampwind()
+  ] 
+}; 
+```
+**Demo on StackBlitz:** [postcss-clampwind-vite](https://stackblitz.com/edit/postcss-clampwind-vite?file=postcss.config.js)
 
 ### PostCSS setup
 
@@ -46,6 +61,8 @@ export default {
 }
 ```
 
+**Demo on StackBlitz:** [postcss-clampwind-postcss](https://stackblitz.com/edit/postcss-clampwind-postcss?file=postcss.config.mjs)
+
 #### CommonJS usage
 
 If you are using CommonJS-based build tools like Webpack, you will need to use the `require` syntax and add `.default` to the import.
@@ -58,21 +75,6 @@ module.exports = {
     require("postcss-clampwind").default
   } 
 };
-```
-
-### Vite project setup
-
-If you are using Vite, you are probably using Tailwind with `@tailwindcss/vite`. You need to import the plugin and use it in your `postcss.config.js` file.
-
-```js
-// postcss.config.js
-import clampwind from "postcss-clampwind";
-
-export default { 
-  plugins: [ 
-    clampwind()
-  ] 
-}; 
 ```
 
 ## Features
