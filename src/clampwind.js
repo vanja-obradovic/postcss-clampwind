@@ -249,7 +249,7 @@ const clampwind = (opts = {}) => {
 
               // MARK: Double MQ
               if (isNested && isSameAtRule) {
-                const currentParams = decl.parent.params;
+                const currentParams = atRule.params;
                 const parentParams = decl.parent.parent.params;
 
                 let minScreen = null;
@@ -313,7 +313,7 @@ const clampwind = (opts = {}) => {
 
               // MARK: Single MQ
               const screenValues = Object.values(screens);
-              const currentParams = decl.parent.params;
+              const currentParams = atRule.params;
 
               // Upper breakpoints (>= syntax or min-width)
               if (currentParams && (currentParams.includes(">") || currentParams.includes("min-width"))) {
@@ -367,7 +367,7 @@ const clampwind = (opts = {}) => {
 
               // MARK: Double CQ
               if (isNested && isSameAtRule) {
-                const currentParams = decl.parent.params;
+                const currentParams = atRule.params;
                 const parentParams = decl.parent.parent.params;
 
                 let minContainer = null;
@@ -428,7 +428,7 @@ const clampwind = (opts = {}) => {
 
               // MARK: Single CQ
               const containerValues = Object.values(containerScreens);
-              const currentParams = decl.parent.params;
+              const currentParams = atRule.params;
 
               // Upper breakpoints (>= syntax or min-width)
               if (currentParams && (currentParams.includes(">") || currentParams.includes("min-width"))) {
